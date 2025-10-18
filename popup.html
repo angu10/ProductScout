@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PromptBridge</title>
+    <style>
+        body {
+            width: 350px;
+            min-height: 400px;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .header {
+            padding: 20px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .tagline {
+            font-size: 14px;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+        }
+
+        .status-indicator.error {
+            background: #f87171;
+        }
+
+        .status-indicator.warning {
+            background: #fbbf24;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .info-value {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .info-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .button {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button.primary {
+            background: rgba(34, 197, 94, 0.3);
+        }
+
+        .button.primary:hover {
+            background: rgba(34, 197, 94, 0.4);
+        }
+
+        .log-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 8px;
+            max-height: 120px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+        }
+
+        .log-entry {
+            margin-bottom: 2px;
+            opacity: 0.8;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🛍️ PromptBridge</div>
+        <p class="tagline">AI-Powered Shopping Assistant</p>
+    </div>
+
+    <div class="content">
+        <!-- Loading State -->
+        <div id="loading-state" class="loading">
+            <div class="spinner"></div>
+            <div>Loading...</div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content" class="hidden">
+            <!-- Status Section -->
+            <div class="section">
+                <div class="section-title">
+                    <span class="status-indicator" id="status-indicator"></span>
+                    Status
+                </div>
+                <div id="status-text">Checking status...</div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="section">
+                <div class="section-title">Statistics</div>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-value" id="analyses-count">0</div>
+                        <div class="info-label">Analyses</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-value" id="products-saved">0</div>
+                        <div class="info-label">Products</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="section">
+                <div class="section-title">Actions</div>
+                <button class="button primary" id="analyze-current">🧠 Analyze Current Page</button>
+                <button class="button" id="view-history">📚 View History</button>
+                <button class="button" id="clear-data">🗑️ Clear Data</button>
+                <button class="button" id="toggle-debug">🐛 Toggle Debug Mode</button>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="section">
+                <div class="section-title">Recent Activity</div>
+                <div class="log-container" id="activity-log">
+                    <div class="log-entry">Extension loaded</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Phase 1 MVP • Chrome Built-in AI Challenge 2025
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
