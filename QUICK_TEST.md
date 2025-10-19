@@ -1,7 +1,5 @@
 # 🚀 Quick Test Guide (Fixed)
 
-## ✅ The permission error is now fixed!
-
 ### Step 1: Reload the Extension
 
 1. Go to `chrome://extensions/`
