@@ -7,7 +7,7 @@
     "tabs",
     "activeTab",
     "storage",
-    "aiLanguageModelOriginTrial"
+    "contextMenus"
   ],
   "host_permissions": [
     "https://www.amazon.com/*",
@@ -21,10 +21,10 @@
   "content_scripts": [
     {
       "matches": [
-            "https://www.amazon.com/*",
-            "https://www.ebay.com/*",
-            "https://www.walmart.com/*",
-            "https://www.target.com/*"
+        "https://www.amazon.com/*",
+        "https://www.ebay.com/*",
+        "https://www.walmart.com/*",
+        "https://www.target.com/*"
       ],
       "js": [
         "utils/helpers.js",
@@ -50,8 +50,12 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["ui/widget.html"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "ui/widget.html"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }
