@@ -7,7 +7,7 @@ class PromptProcessor {
   static async initialize() {
     try {
       PromptBridgeHelpers.log('🤖 Initializing Chrome Built-in AI Prompt API...');
-      
+
       // Check for modern Chrome AI API structure
       PromptBridgeHelpers.log('🔍 Checking AI API availability (multiple methods)...', {
         hasWindowAI: !!window.ai,
@@ -15,7 +15,7 @@ class PromptProcessor {
         hasGlobalAI: !!window.AI,
         hasLanguageModel: !!window.LanguageModel,
         hasChromeAI: !!(window.chrome && window.chrome.aiOriginTrial),
-        availableGlobals: Object.getOwnPropertyNames(window).filter(name => 
+        availableGlobals: Object.getOwnPropertyNames(window).filter(name =>
           name.toLowerCase().includes('ai') || name.includes('Language') || name.includes('Model')
         )
       });
@@ -47,13 +47,13 @@ class PromptProcessor {
       // Check AI availability using modern API
       let availability;
       let params = null;
-      
+
       if (apiMethod === 'window.LanguageModel (modern)') {
         availability = await aiAPI.availability();
         if (availability === 'available') {
           params = await aiAPI.params();
         }
-        
+
         this.capabilities = {
           available: availability,
           defaultTopK: params?.topK || 3,
@@ -74,7 +74,7 @@ class PromptProcessor {
           };
         }
       }
-      
+
       PromptBridgeHelpers.log('✅ AI capabilities retrieved', {
         available: this.capabilities.available,
         defaultTopK: this.capabilities.defaultTopK,
@@ -83,7 +83,7 @@ class PromptProcessor {
       });
 
       const isReady = this.capabilities.available === 'available' || this.capabilities.available === 'readily';
-      
+
       if (!isReady) {
         const statusMessage = {
           'no': 'AI model is not available on this device',
@@ -102,7 +102,7 @@ class PromptProcessor {
         expectedOutputs: [
           {
             type: "text",
-            languages: ["en"] 
+            languages: ["en"]
           }
         ]
       });
@@ -130,31 +130,40 @@ class PromptProcessor {
   static async analyzeProduct(productData) {
     try {
       PromptBridgeHelpers.log('🧠 Starting product analysis with AI...');
-      
+
       if (!await this.ensureInitialized()) {
         throw new Error('AI initialization failed');
       }
 
+      // Ensure translator is available
+      if (typeof PromptBridgeTranslator === 'undefined') {
+        throw new Error('PromptBridgeTranslator not available');
+      }
+
       const prompt = this.buildProductAnalysisPrompt(productData);
+      const currentLanguage = PromptBridgeTranslator.getCurrentLanguage();
+
       PromptBridgeHelpers.log('📝 Generated analysis prompt', {
         promptLength: prompt.length,
         promptPreview: prompt.substring(0, 200) + '...',
         reviewCount: productData.reviewCount,
-        rating: productData.rating
+        rating: productData.rating,
+        targetLanguage: currentLanguage
       });
 
       const startTime = performance.now();
+
       const response = await this.session.prompt(prompt, {
         expectedInputs: [
           {
             type: "text",
-            languages: ["en"]
+            languages: [currentLanguage]
           }
         ],
         expectedOutputs: [
           {
             type: "text",
-            languages: ["en"]
+            languages: [currentLanguage]
           }
         ]
       });
@@ -168,17 +177,33 @@ class PromptProcessor {
       });
 
       const analysis = this.parseAnalysisResponse(response);
-      
+
       // CRITICAL: Validate that AI didn't contradict the input data
       analysis.validated = this.validateAnalysisAgainstData(analysis, productData);
-      
+
+      // Mark analysis with current language (no translation needed for fresh analysis)
+      const detectedLanguage = typeof PromptBridgeTranslator !== 'undefined'
+        ? PromptBridgeTranslator.getCurrentLanguage()
+        : 'en';
+      analysis.translated = false;
+      analysis.translationLanguage = detectedLanguage;
+
+      PromptBridgeHelpers.log('✅ DIRECT PROCESSING COMPLETE: AI processed directly in', {
+        language: detectedLanguage,
+        responseLanguage: detectedLanguage,
+        displayLanguage: detectedLanguage,
+        translationNeeded: false
+      });
+
       PromptBridgeHelpers.log('📊 Analysis parsed successfully', {
         hasRecommendation: !!analysis.recommendation,
         prosCount: analysis.pros.length,
         consCount: analysis.cons.length,
         hasValueAssessment: !!analysis.valueAssessment,
         validationPassed: analysis.validated.passed,
-        validationIssues: analysis.validated.issues
+        validationIssues: analysis.validated.issues,
+        translated: analysis.translated || false,
+        translationLanguage: analysis.translationLanguage
       });
 
       return {
@@ -187,38 +212,63 @@ class PromptProcessor {
           processingTime: Math.round(processingTime),
           analyzedAt: new Date().toISOString(),
           promptLength: prompt.length,
-          responseLength: response.length
+          responseLength: response.length,
+          language: PromptBridgeTranslator.getCurrentLanguage()
         }
       };
 
     } catch (error) {
       PromptBridgeHelpers.error('❌ Product analysis failed', error);
+
+      // Get localized error messages
+      const currentLang = typeof PromptBridgeTranslator !== 'undefined'
+        ? PromptBridgeTranslator.getCurrentLanguage()
+        : 'en';
+      const errorMessages = {
+        en: {
+          recommendation: '🤖 AI analysis not available. Product data extraction successful! To enable AI features: 1) Use Chrome Canary 2) Enable chrome://flags/#prompt-api-for-gemini-nano 3) Restart Chrome',
+          pros: ['Product information extracted successfully', 'Extension working correctly', 'Ready for AI when enabled'],
+          cons: ['AI analysis not available yet'],
+          keyInsights: ['Extension is working!', 'AI features available with Chrome Canary'],
+          targetAudience: 'Users wanting product analysis'
+        },
+        es: {
+          recommendation: '🤖 Análisis de IA no disponible. ¡Extracción de datos del producto exitosa! Para habilitar funciones de IA: 1) Usa Chrome Canary 2) Habilita chrome://flags/#prompt-api-for-gemini-nano 3) Reinicia Chrome',
+          pros: ['Información del producto extraída exitosamente', 'Extensión funcionando correctamente', 'Lista para IA cuando esté habilitada'],
+          cons: ['Análisis de IA no disponible aún'],
+          keyInsights: ['¡La extensión está funcionando!', 'Funciones de IA disponibles con Chrome Canary'],
+          targetAudience: 'Usuarios que quieren análisis de productos'
+        }
+      };
+
+      const messages = errorMessages[currentLang] || errorMessages.en;
+
       return {
         error: error.message,
-        recommendation: '🤖 AI analysis not available. Product data extraction successful! To enable AI features: 1) Use Chrome Canary 2) Enable chrome://flags/#prompt-api-for-gemini-nano 3) Restart Chrome',
-        pros: ['Product information extracted successfully', 'Extension working correctly', 'Ready for AI when enabled'],
-        cons: ['AI analysis not available yet'],
+        recommendation: messages.recommendation,
+        pros: messages.pros,
+        cons: messages.cons,
         valueAssessment: 'unknown',
-        keyInsights: ['Extension is working!', 'AI features available with Chrome Canary'],
-        targetAudience: 'Users wanting product analysis'
+        keyInsights: messages.keyInsights,
+        targetAudience: messages.targetAudience
       };
     }
   }
 
   static buildProductAnalysisPrompt(productData) {
     // Format price display
-    const priceDisplay = productData.originalPrice 
+    const priceDisplay = productData.originalPrice
       ? `$${productData.price} (was $${productData.originalPrice})`
       : `$${productData.price}`;
 
     // Format rating and review count with explicit clarity
     let ratingDisplay = 'No rating available';
     let reviewContext = '';
-    
+
     if (productData.rating) {
       const reviewCount = productData.reviewCount || 0;
       ratingDisplay = `${productData.rating}/5 stars`;
-      
+
       if (reviewCount > 0) {
         ratingDisplay += ` based on ${reviewCount.toLocaleString()} customer reviews`;
         reviewContext = `\nIMPORTANT: This product has ${reviewCount.toLocaleString()} verified customer reviews, indicating it is a well-reviewed product with substantial customer feedback.`;
@@ -227,35 +277,28 @@ class PromptProcessor {
       }
     }
 
-    return `You are analyzing a product for a shopping assistant. STRICTLY use ONLY the information provided below. Do NOT make assumptions or add information not explicitly stated.
+    // Get localized prompt template
+    const promptLanguage = typeof PromptBridgeTranslator !== 'undefined'
+      ? PromptBridgeTranslator.getCurrentLanguage()
+      : 'en';
+    const localizedPrompts = typeof PromptBridgeTranslator !== 'undefined'
+      ? PromptBridgeTranslator.getLocalizedPrompts()
+      : { en: { productAnalysisPrompt: 'Default English prompt' } };
+    const promptTemplate = localizedPrompts[promptLanguage]?.productAnalysisPrompt || localizedPrompts.en.productAnalysisPrompt;
 
-PRODUCT DETAILS:
-- Title: ${productData.title}
-- Price: ${priceDisplay}
-- Rating: ${ratingDisplay}${reviewContext}
-- Availability: ${productData.availability || 'Unknown'}
-- Category: ${productData.productType}
-- Source: ${productData.source.site}
-${productData.brand ? `- Brand: ${productData.brand}` : ''}
-${productData.description ? `- Description: ${productData.description.substring(0, 500)}` : ''}
+    // Replace placeholders in the template
+    const prompt = promptTemplate
+      .replace('{title}', productData.title)
+      .replace('{price}', priceDisplay)
+      .replace('{rating}', ratingDisplay + reviewContext)
+      .replace('{availability}', productData.availability || 'Unknown')
+      .replace('{category}', productData.productType)
+      .replace('{source}', productData.source.site)
+      .replace('{brand}', productData.brand ? `- Brand: ${productData.brand}` : '')
+      .replace('{description}', productData.description ? `- Description: ${productData.description.substring(0, 500)}` : '')
+      .replace('{reviewCount}', productData.reviewCount || 0);
 
-CRITICAL INSTRUCTIONS:
-1. If the product has ${productData.reviewCount || 0} reviews, you MUST acknowledge this in your analysis
-2. Do NOT claim "no reviews" if review data is provided
-3. Base ALL cons on actual product data or reasonable inferences from the information given
-4. Do NOT fabricate concerns that contradict the provided data
-
-Provide a JSON response with this EXACT structure:
-{
-  "recommendation": "Brief 2-3 sentence recommendation considering the actual review count and rating",
-  "pros": ["List of 3-5 positive aspects based on the data provided"],
-  "cons": ["List of genuine concerns or drawbacks - do NOT mention lack of reviews if ${productData.reviewCount || 0} reviews exist"],
-  "valueAssessment": "excellent|good|fair|poor",
-  "keyInsights": ["2-3 most important insights based on actual data"],
-  "targetAudience": "Who would benefit most from this product"
-}
-
-Focus on practical shopping advice using ONLY the information provided above.`;
+    return prompt;
   }
 
   static validateAnalysisAgainstData(analysis, productData) {
@@ -264,12 +307,12 @@ Focus on practical shopping advice using ONLY the information provided above.`;
 
     // Check if AI claimed no reviews when reviews exist
     if (productData.reviewCount && productData.reviewCount > 0) {
-      const mentionsNoReviews = analysis.cons.some(con => 
-        con.toLowerCase().includes('no review') || 
+      const mentionsNoReviews = analysis.cons.some(con =>
+        con.toLowerCase().includes('no review') ||
         con.toLowerCase().includes('no user review') ||
         con.toLowerCase().includes('lack of review')
       );
-      
+
       if (mentionsNoReviews) {
         passed = false;
         issues.push({
@@ -277,14 +320,14 @@ Focus on practical shopping advice using ONLY the information provided above.`;
           message: `AI claimed no reviews but product has ${productData.reviewCount} reviews`,
           severity: 'high'
         });
-        
+
         // Auto-fix: Remove the contradictory cons
-        analysis.cons = analysis.cons.filter(con => 
-          !(con.toLowerCase().includes('no review') || 
+        analysis.cons = analysis.cons.filter(con =>
+          !(con.toLowerCase().includes('no review') ||
             con.toLowerCase().includes('no user review') ||
             con.toLowerCase().includes('lack of review'))
         );
-        
+
         // Add a clarification if cons are now empty
         if (analysis.cons.length === 0) {
           analysis.cons = [
@@ -317,7 +360,7 @@ Focus on practical shopping advice using ONLY the information provided above.`;
   static parseAnalysisResponse(response) {
     try {
       PromptBridgeHelpers.log('🔍 Parsing AI analysis response...');
-      
+
       // Try to extract JSON from the response
       let jsonMatch = response.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -355,7 +398,7 @@ Focus on practical shopping advice using ONLY the information provided above.`;
   static async generateSearchSuggestions(productData) {
     try {
       PromptBridgeHelpers.log('🔍 Generating search suggestions...');
-      
+
       if (!await this.ensureInitialized()) {
         throw new Error('AI initialization failed');
       }
@@ -417,7 +460,7 @@ Focus on:
   static async compareProducts(products) {
     try {
       PromptBridgeHelpers.log('⚖️ Starting multi-product comparison...');
-      
+
       if (!await this.ensureInitialized()) {
         throw new Error('AI initialization failed');
       }
@@ -467,7 +510,7 @@ Focus on:
   }
 
   static buildComparisonPrompt(products) {
-    const productSummaries = products.map((product, index) => 
+    const productSummaries = products.map((product, index) =>
       `Product ${index + 1}: ${product.title} - $${product.price} (${product.source.site}) - Rating: ${product.rating || 'N/A'} (${product.reviewCount || 0} reviews)`
     ).join('\n');
 

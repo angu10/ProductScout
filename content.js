@@ -22,6 +22,13 @@ class PromptBridgeMain {
         return;
       }
 
+      // Initialize translator first
+      PromptBridgeHelpers.log('🌐 Initializing translator...');
+      const translatorInitialized = await PromptBridgeTranslator.initialize();
+      if (!translatorInitialized) {
+        PromptBridgeHelpers.log('⚠️ Translator initialization failed, continuing without translation support');
+      }
+
       // Detect if this is a product page
       const detectionResult = await ProductDetector.detectAndInit();
       if (!detectionResult) {
@@ -31,12 +38,15 @@ class PromptBridgeMain {
 
       PromptBridgeHelpers.log('✅ Product page detected, proceeding with initialization', {
         site: detectionResult.config.name,
-        productType: detectionResult.productType
+        productType: detectionResult.productType,
+        currentLanguage: typeof PromptBridgeTranslator !== 'undefined'
+          ? PromptBridgeTranslator.getCurrentLanguage()
+          : 'en'
       });
 
       // Extract product data
       this.currentProductData = await ProductExtractor.extractProductData(detectionResult);
-      
+
       // Validate extracted data
       const validation = ProductExtractor.validateExtractedData(this.currentProductData);
       if (!validation.isValid) {
@@ -61,13 +71,17 @@ class PromptBridgeMain {
 
       // Start AI analysis
       this.analyzeCurrentProduct();
-      
+
       this.isInitialized = true;
       PromptBridgeHelpers.log('🎉 PromptBridge initialization completed successfully', {
         dataCompleteness: `${validation.completeness.toFixed(1)}%`,
-        extractedFields: Object.keys(this.currentProductData).filter(key => 
+        extractedFields: Object.keys(this.currentProductData).filter(key =>
           this.currentProductData[key] !== null && key !== 'extractionLog'
-        ).length
+        ).length,
+        language: typeof PromptBridgeTranslator !== 'undefined'
+          ? PromptBridgeTranslator.getCurrentLanguage()
+          : 'en',
+        translatorReady: translatorInitialized
       });
 
       // Setup page change monitoring
@@ -75,7 +89,7 @@ class PromptBridgeMain {
 
     } catch (error) {
       PromptBridgeHelpers.error('❌ PromptBridge initialization failed', error);
-      
+
       if (this.initAttempts < this.maxInitAttempts) {
         PromptBridgeHelpers.log('🔄 Retrying initialization in 3 seconds...');
         setTimeout(() => this.initialize(), 3000);
@@ -97,9 +111,18 @@ class PromptBridgeMain {
         site: this.currentProductData.source.site
       });
 
+      // Show loading state in the widget (disables language selector) while analysis is running
+      try {
+        if (window.PromptBridgeWidget && window.PromptBridgeWidget.instance) {
+          window.PromptBridgeWidget.showLoadingState();
+        }
+      } catch (e) {
+        PromptBridgeHelpers.error('Failed to show widget loading state before analysis', e);
+      }
+
       // Perform AI analysis
       this.currentAnalysis = await PromptProcessor.analyzeProduct(this.currentProductData);
-      
+
       if (this.currentAnalysis.error) {
         PromptBridgeHelpers.error('❌ AI analysis completed with errors', this.currentAnalysis.error);
       } else {
@@ -115,7 +138,7 @@ class PromptBridgeMain {
 
       // Save analysis to storage for future reference
       await PromptBridgeHelpers.saveToStorage(
-        `analysis_${this.currentProductData.source.url.split('/').pop()}`, 
+        `analysis_${this.currentProductData.source.url.split('/').pop()}`,
         {
           productData: this.currentProductData,
           analysis: this.currentAnalysis,
@@ -125,7 +148,7 @@ class PromptBridgeMain {
 
     } catch (error) {
       PromptBridgeHelpers.error('❌ Product analysis failed', error);
-      
+
       const errorAnalysis = {
         error: error.message,
         recommendation: 'Unable to analyze this product due to an AI processing error. Product data extraction was successful, but AI analysis failed.',
@@ -133,7 +156,7 @@ class PromptBridgeMain {
         cons: ['AI analysis unavailable'],
         valueAssessment: 'unknown'
       };
-      
+
       PromptBridgeWidget.update(errorAnalysis);
     }
   }
@@ -144,19 +167,19 @@ class PromptBridgeMain {
 
       // Monitor URL changes (for SPAs)
       let currentUrl = window.location.href;
-      
+
       const checkUrlChange = () => {
         if (window.location.href !== currentUrl) {
           PromptBridgeHelpers.log('🔄 URL changed detected', {
             from: currentUrl,
             to: window.location.href
           });
-          
+
           currentUrl = window.location.href;
-          
+
           // Clean up current state
           this.cleanup();
-          
+
           // Reinitialize after a short delay
           setTimeout(() => this.initialize(), 1000);
         }
@@ -167,18 +190,18 @@ class PromptBridgeMain {
 
       // Monitor DOM changes that might indicate page updates
       const observer = new MutationObserver((mutations) => {
-        const significantChanges = mutations.some(mutation => 
-          mutation.type === 'childList' && 
+        const significantChanges = mutations.some(mutation =>
+          mutation.type === 'childList' &&
           mutation.addedNodes.length > 0 &&
-          Array.from(mutation.addedNodes).some(node => 
-            node.nodeType === Node.ELEMENT_NODE && 
+          Array.from(mutation.addedNodes).some(node =>
+            node.nodeType === Node.ELEMENT_NODE &&
             (node.id || node.className)
           )
         );
 
         if (significantChanges) {
           PromptBridgeHelpers.log('🔄 Significant DOM changes detected, checking if reinitialization needed');
-          
+
           // Check if our widget is still present and product data is still valid
           if (!PromptBridgeWidget.isPresent() || !this.validateCurrentContext()) {
             PromptBridgeHelpers.log('🔄 Context validation failed, reinitializing...');
@@ -210,7 +233,7 @@ class PromptBridgeMain {
       const { config } = detection;
       const titleElement = document.querySelector(config.selectors.title);
       const priceElement = document.querySelector(config.selectors.price);
-      
+
       return !!(titleElement && priceElement);
     } catch (error) {
       PromptBridgeHelpers.error('❌ Context validation failed', error);
@@ -221,7 +244,7 @@ class PromptBridgeMain {
   static showErrorWidget(errorMessage) {
     try {
       PromptBridgeHelpers.log('⚠️ Showing error widget', { error: errorMessage });
-      
+
       const errorData = {
         title: 'PromptBridge Error',
         price: null,
@@ -247,19 +270,19 @@ class PromptBridgeMain {
   static cleanup() {
     try {
       PromptBridgeHelpers.log('🧹 Cleaning up PromptBridge state...');
-      
+
       // Remove widget
       PromptBridgeWidget.remove();
-      
+
       // Clear current data
       this.currentProductData = null;
       this.currentAnalysis = null;
       this.isInitialized = false;
       this.initAttempts = 0;
-      
+
       // Cleanup AI session
       PromptProcessor.cleanup();
-      
+
       PromptBridgeHelpers.log('✅ Cleanup completed');
     } catch (error) {
       PromptBridgeHelpers.error('❌ Cleanup failed', error);
@@ -273,11 +296,11 @@ class PromptBridgeMain {
         .filter(([key]) => key.startsWith('product_') || key.startsWith('analysis_'))
         .map(([key, value]) => ({ key, ...value }))
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      
+
       PromptBridgeHelpers.log('📚 Retrieved product history', {
         totalProducts: products.length
       });
-      
+
       return products;
     } catch (error) {
       PromptBridgeHelpers.error('❌ Failed to retrieve product history', error);
@@ -323,6 +346,76 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('beforeunload', () => {
   PromptBridgeHelpers.log('👋 Page unloading, cleaning up...');
   PromptBridgeMain.cleanup();
+});
+
+// Handle messages from popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  try {
+    PromptBridgeHelpers.log('📨 Message received from popup:', message);
+
+    switch (message.action) {
+      case 'ping':
+        sendResponse({ status: 'pong', timestamp: Date.now() });
+        break;
+
+      case 'triggerAnalysis':
+        if (PromptBridgeMain.currentProductData) {
+          PromptBridgeMain.analyzeCurrentProduct();
+          sendResponse({ status: 'analysis_triggered' });
+        } else {
+          sendResponse({ status: 'no_product_data' });
+        }
+        break;
+
+      case 'changeLanguage':
+        PromptBridgeHelpers.log('🌐 Language change requested:', message.language);
+        PromptBridgeTranslator.setLanguage(message.language).then(async () => {
+          // Update widget if present
+          if (window.PromptBridgeWidget && window.PromptBridgeWidget.instance) {
+            window.PromptBridgeWidget.updateLanguageElements();
+
+            // Check if we have existing analysis to translate
+            if (PromptBridgeMain.currentAnalysis) {
+              const currentAnalysis = PromptBridgeMain.currentAnalysis;
+              const currentAnalysisLanguage = currentAnalysis.translationLanguage || 'en';
+
+              if (currentAnalysisLanguage !== message.language) {
+                // Translate existing analysis
+                PromptBridgeHelpers.log('🔄 LANGUAGE SWITCH from popup: Translating existing analysis');
+                const translatedAnalysis = await PromptBridgeTranslator.translateAnalysis(currentAnalysis);
+                PromptBridgeWidget.update(translatedAnalysis);
+                PromptBridgeMain.currentAnalysis = translatedAnalysis;
+              }
+            } else if (PromptBridgeMain.currentProductData) {
+              // Generate fresh analysis if no existing analysis
+              PromptBridgeHelpers.log('🔄 FRESH ANALYSIS from popup: Generating new analysis');
+              await PromptBridgeMain.analyzeCurrentProduct();
+            }
+          }
+          sendResponse({ status: 'language_changed', language: message.language });
+        }).catch(error => {
+          PromptBridgeHelpers.error('❌ Language change failed:', error);
+          sendResponse({ status: 'error', error: error.message });
+        });
+        return true; // Keep message channel open for async response
+
+      case 'showDebugInfo':
+        if (window.PromptBridgeWidget && window.PromptBridgeWidget.instance) {
+          window.PromptBridgeWidget.toggleDebugPanel();
+          sendResponse({ status: 'debug_toggled' });
+        } else {
+          sendResponse({ status: 'no_widget' });
+        }
+        break;
+
+      default:
+        PromptBridgeHelpers.log('⚠️ Unknown message action:', message.action);
+        sendResponse({ status: 'error', error: 'Unknown action' });
+    }
+  } catch (error) {
+    PromptBridgeHelpers.error('❌ Message handling failed:', error);
+    sendResponse({ status: 'error', error: error.message });
+  }
 });
 
 // Make main class available globally for debugging

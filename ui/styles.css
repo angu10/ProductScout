@@ -42,6 +42,49 @@
 .promptbridge-controls {
   display: flex !important;
   gap: 8px !important;
+  align-items: center !important;
+}
+
+/* Language Selector Styles */
+.promptbridge-language-selector {
+  margin-right: 8px !important;
+}
+
+.promptbridge-language-dropdown {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 4px !important;
+  color: white !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.promptbridge-language-dropdown:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.promptbridge-language-dropdown:focus {
+  outline: none !important;
+  border-color: #4CAF50 !important;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2) !important;
+}
+
+.promptbridge-language-dropdown option {
+  background: #2c2c2c !important;
+  color: white !important;
+}
+
+/* Translation download progress indicator */
+.translation-download-progress {
+  animation: pulse 1.5s ease-in-out infinite !important;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
 .promptbridge-btn {
@@ -229,6 +272,27 @@
 }
 
 .value-poor {
+  background: #dc2626 !important;
+  color: white !important;
+}
+
+/* Spanish value assessment badges */
+.value-excelente {
+  background: #059669 !important;
+  color: white !important;
+}
+
+.value-bueno {
+  background: #0891b2 !important;
+  color: white !important;
+}
+
+.value-regular {
+  background: #d97706 !important;
+  color: white !important;
+}
+
+.value-pobre {
   background: #dc2626 !important;
   color: white !important;
 }

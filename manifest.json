@@ -31,6 +31,7 @@
         "utils/helpers.js",
         "agents/detector.js",
         "agents/extractor.js",
+        "ai/translator.js",
         "ai/prompt-processor.js",
         "ui/widget.js",
         "content.js"

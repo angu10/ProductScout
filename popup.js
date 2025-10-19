@@ -24,6 +24,9 @@ class PopupController {
       // Load initial data
       await this.loadInitialData();
       
+      // Load language settings
+      await this.loadLanguageSettings();
+      
       // Show main content
       document.getElementById('loading-state').classList.add('hidden');
       document.getElementById('main-content').classList.remove('hidden');
@@ -82,6 +85,16 @@ class PopupController {
           await this.toggleDebugMode();
         } catch (error) {
           this.showError('Failed to toggle debug mode: ' + error.message);
+        }
+      });
+
+      // Language selector
+      document.getElementById('language-select').addEventListener('change', async (e) => {
+        try {
+          this.logActivity('Language changed to: ' + e.target.value);
+          await this.changeLanguage(e.target.value);
+        } catch (error) {
+          this.showError('Failed to change language: ' + error.message);
         }
       });
 
@@ -364,6 +377,73 @@ class PopupController {
     }
 
     console.log('[PromptBridge Popup] 📝 Activity logged:', message);
+  }
+
+  static async loadLanguageSettings() {
+    try {
+      console.log('[PromptBridge Popup] 🌐 Loading language settings...');
+      
+      // Get current language preference
+      const settings = await chrome.storage.local.get('languageSettings');
+      const currentLanguage = settings.languageSettings?.preferredLanguage || 'en';
+      
+      // Update language selector
+      const languageSelect = document.getElementById('language-select');
+      if (languageSelect) {
+        languageSelect.value = currentLanguage;
+        console.log('[PromptBridge Popup] ✅ Language selector updated:', currentLanguage);
+      }
+      
+    } catch (error) {
+      console.error('[PromptBridge Popup] ❌ Failed to load language settings:', error);
+    }
+  }
+
+  static async changeLanguage(newLanguage) {
+    try {
+      console.log('[PromptBridge Popup] 🌐 Changing language to:', newLanguage);
+      
+      // Save language preference
+      const settings = {
+        preferredLanguage: newLanguage,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      await chrome.storage.local.set({ languageSettings: settings });
+      
+      // Show feedback
+      const languageSelect = document.getElementById('language-select');
+      if (languageSelect) {
+        languageSelect.disabled = true;
+        languageSelect.style.opacity = '0.6';
+      }
+      
+      // Notify content script of language change
+      try {
+        await chrome.tabs.sendMessage(this.currentTab.id, { 
+          action: 'changeLanguage',
+          language: newLanguage,
+          timestamp: Date.now()
+        });
+        console.log('[PromptBridge Popup] ✅ Language change message sent to content script');
+      } catch (error) {
+        console.log('[PromptBridge Popup] ⚠️ Could not notify content script (may not be on supported page)');
+      }
+      
+      // Re-enable language selector
+      setTimeout(() => {
+        if (languageSelect) {
+          languageSelect.disabled = false;
+          languageSelect.style.opacity = '1';
+        }
+      }, 1000);
+      
+      console.log('[PromptBridge Popup] ✅ Language changed successfully to:', newLanguage);
+      
+    } catch (error) {
+      console.error('[PromptBridge Popup] ❌ Language change failed:', error);
+      throw error;
+    }
   }
 
   static showError(message) {
