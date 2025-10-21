@@ -94,11 +94,15 @@ class PromptBridgeMain {
         throw new Error('No product data available for analysis');
       }
 
+      // Set analyzing state
+      PromptBridgeWidget.setAnalyzingState(true);
+
       PromptBridgeHelpers.log('🧠 Starting AI analysis of current product...', {
         productTitle: this.currentProductData.title,
         price: this.currentProductData.price,
         site: this.currentProductData.source.site,
-        agentMode: this.useAgentWorkflow
+        agentMode: this.useAgentWorkflow,
+        currentLanguage: PromptBridgeWidget.getCurrentLanguage()
       });
 
       // Choose analysis method: Agent Workflow vs. Simple Analysis
@@ -122,7 +126,8 @@ class PromptBridgeMain {
           valueAssessment: this.currentAnalysis.valueAssessment,
           processingTime: this.currentAnalysis.metadata?.processingTime,
           isAgentBased: this.currentAnalysis.isAgentBased || false,
-          agentSteps: this.currentAnalysis.agentWorkflow?.steps?.length || 0
+          agentSteps: this.currentAnalysis.agentWorkflow?.steps?.length || 0,
+          currentLanguage: PromptBridgeWidget.getCurrentLanguage()
         });
       }
 
@@ -135,7 +140,8 @@ class PromptBridgeMain {
         {
           productData: this.currentProductData,
           analysis: this.currentAnalysis,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          language: PromptBridgeWidget.getCurrentLanguage()
         }
       );
 
@@ -151,6 +157,9 @@ class PromptBridgeMain {
       };
       
       PromptBridgeWidget.update(errorAnalysis);
+    } finally {
+      // Clear analyzing state
+      PromptBridgeWidget.setAnalyzingState(false);
     }
   }
 

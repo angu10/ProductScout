@@ -1,7 +1,9 @@
-// Enhanced Widget with Agent Thinking Visualization
+// Enhanced Widget with Agent Thinking Visualization and Language Support
 class PromptBridgeWidget {
   static widgetId = 'promptbridge-widget';
   static currentWidget = null;
+  static currentLanguage = 'en';
+  static isAnalyzing = false;
 
   static create(productData, analysisData = null) {
     try {
@@ -22,6 +24,12 @@ class PromptBridgeWidget {
       widget.innerHTML = `
         <div class="pb-header">
           <span class="pb-logo">🤖 PromptBridge AI</span>
+          <div class="pb-language-selector">
+            <select id="pb-language-select" ${this.isAnalyzing ? 'disabled' : ''}>
+              <option value="en" ${this.currentLanguage === 'en' ? 'selected' : ''}>🇺🇸 English</option>
+              <option value="fr" ${this.currentLanguage === 'fr' ? 'selected' : ''}>🇫🇷 Français</option>
+            </select>
+          </div>
           <button class="pb-close" aria-label="Close">&times;</button>
         </div>
         
@@ -64,15 +72,28 @@ class PromptBridgeWidget {
   }
 
   static renderLoading() {
+    const loadingMessages = {
+      'en': {
+        analyzing: '🧠 AI Agent analyzing product...',
+        status: 'Initializing agent workflow'
+      },
+      'fr': {
+        analyzing: '🧠 Agent IA analysant le produit...',
+        status: 'Initialisation du flux de travail de l\'agent'
+      }
+    };
+
+    const messages = loadingMessages[this.currentLanguage] || loadingMessages['en'];
+
     return `
       <div class="pb-loading">
         <div class="pb-spinner"></div>
-        <p>🧠 AI Agent analyzing product...</p>
+        <p>${messages.analyzing}</p>
         <div class="pb-agent-status">
           <div class="pb-thinking-dots">
             <span>.</span><span>.</span><span>.</span>
           </div>
-          <p class="pb-status-text">Initializing agent workflow</p>
+          <p class="pb-status-text">${messages.status}</p>
         </div>
       </div>
     `;
@@ -81,40 +102,65 @@ class PromptBridgeWidget {
   static renderAnalysis(analysis) {
     const isAgentBased = analysis.isAgentBased && analysis.agentWorkflow;
     
+    const labels = {
+      'en': {
+        recommendation: '💡 Recommendation',
+        valueAssessment: '💰 Value Assessment',
+        pros: '✅ Pros',
+        cons: '⚠️ Cons',
+        keyInsights: '🔍 Key Insights',
+        nextSteps: '📋 Agent Suggested Next Steps',
+        agentDecision: 'Agent Decision:',
+        confidence: 'confidence'
+      },
+      'fr': {
+        recommendation: '💡 Recommandation',
+        valueAssessment: '💰 Évaluation de la Valeur',
+        pros: '✅ Avantages',
+        cons: '⚠️ Inconvénients',
+        keyInsights: '🔍 Idées Clés',
+        nextSteps: '📋 Étapes Suggérées par l\'Agent',
+        agentDecision: 'Décision de l\'Agent:',
+        confidence: 'confiance'
+      }
+    };
+
+    const currentLabels = labels[this.currentLanguage] || labels['en'];
+    
     return `
       ${isAgentBased ? this.renderAgentThinking(analysis.agentWorkflow) : ''}
       
       <div class="pb-analysis">
         <div class="pb-section pb-recommendation">
-          <h4>💡 Recommendation</h4>
+          <h4>${currentLabels.recommendation}</h4>
           <p>${analysis.recommendation}</p>
           ${analysis.agentWorkflow?.results?.finalRecommendation ? `
             <div class="pb-agent-decision">
-              <strong>Agent Decision:</strong> 
+              <strong>${currentLabels.agentDecision}</strong> 
               <span class="pb-decision-badge pb-decision-${analysis.agentWorkflow.results.finalRecommendation.decision}">
                 ${analysis.agentWorkflow.results.finalRecommendation.decision.toUpperCase()}
               </span>
               <span class="pb-confidence">
-                (${Math.round(analysis.agentWorkflow.results.finalRecommendation.confidence * 100)}% confidence)
+                (${Math.round(analysis.agentWorkflow.results.finalRecommendation.confidence * 100)}% ${currentLabels.confidence})
               </span>
             </div>
           ` : ''}
         </div>
 
         <div class="pb-section pb-value">
-          <h4>💰 Value Assessment</h4>
+          <h4>${currentLabels.valueAssessment}</h4>
           <span class="pb-badge pb-badge-${analysis.valueAssessment}">${analysis.valueAssessment}</span>
         </div>
 
         <div class="pb-section pb-pros-cons">
           <div class="pb-pros">
-            <h4>✅ Pros</h4>
+            <h4>${currentLabels.pros}</h4>
             <ul>
               ${analysis.pros.map(pro => `<li>${pro}</li>`).join('')}
             </ul>
           </div>
           <div class="pb-cons">
-            <h4>⚠️ Cons</h4>
+            <h4>${currentLabels.cons}</h4>
             <ul>
               ${analysis.cons.map(con => `<li>${con}</li>`).join('')}
             </ul>
@@ -123,7 +169,7 @@ class PromptBridgeWidget {
 
         ${analysis.keyInsights && analysis.keyInsights.length > 0 ? `
           <div class="pb-section pb-insights">
-            <h4>🔍 Key Insights</h4>
+            <h4>${currentLabels.keyInsights}</h4>
             <ul>
               ${analysis.keyInsights.map(insight => `<li>${insight}</li>`).join('')}
             </ul>
@@ -132,7 +178,7 @@ class PromptBridgeWidget {
 
         ${isAgentBased && analysis.agentWorkflow?.results?.finalRecommendation?.nextSteps ? `
           <div class="pb-section pb-next-steps">
-            <h4>📋 Agent Suggested Next Steps</h4>
+            <h4>${currentLabels.nextSteps}</h4>
             <ol>
               ${analysis.agentWorkflow.results.finalRecommendation.nextSteps.map(step => 
                 `<li>${step}</li>`
@@ -278,6 +324,15 @@ class PromptBridgeWidget {
       closeBtn.addEventListener('click', () => this.remove());
     }
 
+    // Language selector
+    const languageSelect = widget.querySelector('#pb-language-select');
+    if (languageSelect) {
+      languageSelect.addEventListener('change', async (e) => {
+        const newLanguage = e.target.value;
+        await this.handleLanguageChange(newLanguage);
+      });
+    }
+
     // Make widget draggable (optional)
     this.makeDraggable(widget);
   }
@@ -342,6 +397,131 @@ class PromptBridgeWidget {
       width: rect.width,
       height: rect.height
     };
+  }
+
+  static async handleLanguageChange(newLanguage) {
+    try {
+      PromptBridgeHelpers.log('🌐 Language change requested:', {
+        from: this.currentLanguage,
+        to: newLanguage
+      });
+
+      if (newLanguage === this.currentLanguage) {
+        return; // No change needed
+      }
+
+      // Disable language selector during translation
+      const languageSelect = document.getElementById('pb-language-select');
+      if (languageSelect) {
+        languageSelect.disabled = true;
+      }
+
+      // Show loading state
+      this.showTranslationLoading();
+
+      // Get current analysis data from PromptBridgeMain
+      const currentAnalysis = PromptBridgeMain.currentAnalysis;
+      const currentProductData = PromptBridgeMain.currentProductData;
+
+      if (!currentAnalysis) {
+        throw new Error('No analysis data available for translation');
+      }
+
+      // Translate existing analysis data for any language change
+      await this.translateAnalysisData(currentAnalysis, newLanguage);
+
+    } catch (error) {
+      PromptBridgeHelpers.error('❌ Language change failed', error);
+      this.showTranslationError(error.message);
+    } finally {
+      // Re-enable language selector
+      const languageSelect = document.getElementById('pb-language-select');
+      if (languageSelect) {
+        languageSelect.disabled = false;
+      }
+    }
+  }
+
+  static async translateAnalysisData(analysisData, targetLanguage) {
+    try {
+      PromptBridgeHelpers.log('🔄 Translating analysis data...', { targetLanguage });
+
+      // Initialize translator if needed
+      if (!PromptBridgeTranslator.isInitialized) {
+        await PromptBridgeTranslator.initialize();
+      }
+
+      // Translate the analysis data
+      const translatedAnalysis = await PromptBridgeTranslator.translateAnalysisData(analysisData, targetLanguage);
+
+      // Update current language
+      this.currentLanguage = targetLanguage;
+      PromptBridgeTranslator.setCurrentLanguage(targetLanguage);
+
+      // Update the widget with translated content
+      this.update(translatedAnalysis);
+
+      PromptBridgeHelpers.log('✅ Analysis translation completed', { targetLanguage });
+
+    } catch (error) {
+      PromptBridgeHelpers.error('❌ Analysis translation failed', error);
+      throw error;
+    }
+  }
+
+
+  static showTranslationLoading() {
+    const contentDiv = document.querySelector('.pb-content');
+    if (contentDiv) {
+      const productInfoDiv = contentDiv.querySelector('.pb-product-info');
+      const productInfoHTML = productInfoDiv ? productInfoDiv.outerHTML : '';
+
+      const loadingMessages = {
+        'en': '🔄 Translating content...',
+        'fr': '🔄 Traduction du contenu...'
+      };
+
+      contentDiv.innerHTML = productInfoHTML + `
+        <div class="pb-loading">
+          <div class="pb-spinner"></div>
+          <p>${loadingMessages[this.currentLanguage] || loadingMessages['en']}</p>
+        </div>
+      `;
+    }
+  }
+
+
+  static showTranslationError(errorMessage) {
+    const contentDiv = document.querySelector('.pb-content');
+    if (contentDiv) {
+      const productInfoDiv = contentDiv.querySelector('.pb-product-info');
+      const productInfoHTML = productInfoDiv ? productInfoDiv.outerHTML : '';
+
+      contentDiv.innerHTML = productInfoHTML + `
+        <div class="pb-error">
+          <h4>⚠️ Translation Error</h4>
+          <p>${errorMessage}</p>
+          <button onclick="location.reload()" class="pb-retry-btn">Retry</button>
+        </div>
+      `;
+    }
+  }
+
+  static setAnalyzingState(isAnalyzing) {
+    this.isAnalyzing = isAnalyzing;
+    const languageSelect = document.getElementById('pb-language-select');
+    if (languageSelect) {
+      languageSelect.disabled = isAnalyzing;
+    }
+  }
+
+  static getCurrentLanguage() {
+    return this.currentLanguage;
+  }
+
+  static setCurrentLanguage(language) {
+    this.currentLanguage = language;
+    PromptBridgeTranslator.setCurrentLanguage(language);
   }
 
   static truncate(text, length) {

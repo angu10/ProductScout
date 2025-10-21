@@ -35,12 +35,49 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  gap: 12px;
 }
 
 .pb-logo {
   font-weight: 600;
   font-size: 16px;
   color: white;
+  flex: 1;
+}
+
+/* Language Selector */
+.pb-language-selector {
+  display: flex;
+  align-items: center;
+}
+
+#pb-language-select {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: white;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 120px;
+}
+
+#pb-language-select:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+#pb-language-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#pb-language-select option {
+  background: #2d3748;
+  color: white;
+  padding: 8px;
 }
 
 .pb-close {
@@ -524,6 +561,43 @@
 .pb-metadata small {
   color: #718096;
   font-size: 12px;
+}
+
+/* Error States */
+.pb-error {
+  text-align: center;
+  padding: 40px 20px;
+  background: #fed7d7;
+  border-radius: 8px;
+  border: 1px solid #f56565;
+}
+
+.pb-error h4 {
+  color: #742a2a;
+  margin: 0 0 12px 0;
+  font-size: 16px;
+}
+
+.pb-error p {
+  color: #742a2a;
+  margin: 0 0 20px 0;
+  font-size: 14px;
+}
+
+.pb-retry-btn {
+  background: #f56565;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.pb-retry-btn:hover {
+  background: #e53e3e;
 }
 
 /* Responsive */
