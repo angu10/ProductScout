@@ -33,6 +33,7 @@
         "agents/extractor.js",
         "ai/translator.js",
         "ai/prompt-processor.js",
+        "ai/agent-orchestrator.js",
         "ui/widget.js",
         "content.js"
       ],
@@ -57,6 +58,7 @@
     }
   ],
   "trial_tokens": [
+    "ArbO+WySLMK3SgCASOUJLck9WOao/i2qVsmKQhzzZGSbNfBVaak0UPpmMrnKX36nntcUZisNealTomuMZE+j8QkAAAB7eyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vZ2tmZGpqcGpoY3BkYmxrYm1pbmRqcGZjaWhrcGNsbmgiLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElNdWx0aW1vZGFsSW5wdXQiLCJleHBpcnkiOjE3NzQzMTA0MDB9"
     
   ]
 }

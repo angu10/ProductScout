@@ -1,17 +1,16 @@
-// PromptBridge UI Widget with detailed logging
+// Enhanced Widget with Agent Thinking Visualization
 class PromptBridgeWidget {
-  static instance = null;
-  static isVisible = false;
-  static isDragging = false;
-  static debugMode = true; // Enable for development
+  static widgetId = 'promptbridge-widget';
+  static currentWidget = null;
 
-  static create(productData, analysis = null) {
+  static create(productData, analysisData = null) {
     try {
       PromptBridgeHelpers.log('🎨 Creating PromptBridge widget...');
 
       // Remove existing widget if present
       this.remove();
 
+      // Create widget container
       const widget = document.createElement('div');
       widget.id = 'promptbridge-widget';
       widget.className = 'promptbridge-widget animate-in';
@@ -29,9 +28,9 @@ class PromptBridgeWidget {
       this.makeDraggable(widget);
 
       PromptBridgeHelpers.log('✅ Widget created successfully', {
-        hasAnalysis: !!analysis,
-        widgetId: widget.id,
-        position: { top: '20px', right: '20px' }
+        hasAnalysis: !!analysisData,
+        widgetId: this.widgetId,
+        position: this.getPosition()
       });
 
       return widget;
@@ -81,15 +80,43 @@ class PromptBridgeWidget {
          </div>`
       : '';
 
-    return `
-      <div class="promptbridge-section">
-        <div class="promptbridge-product-title">${productData.title || 'Product Title'}</div>
-        ${productData.price ? priceDisplay : '<div class="promptbridge-error">Price not available</div>'}
-        ${ratingDisplay}
-        <div style="font-size: 12px; color: rgba(255, 255, 255, 0.7); margin-top: 8px;">
-          From ${productData.source.site} • ${productData.productType}
+        <div class="pb-section pb-pros-cons">
+          <div class="pb-pros">
+            <h4>✅ Pros</h4>
+            <ul>
+              ${analysis.pros.map(pro => `<li>${pro}</li>`).join('')}
+            </ul>
+          </div>
+          <div class="pb-cons">
+            <h4>⚠️ Cons</h4>
+            <ul>
+              ${analysis.cons.map(con => `<li>${con}</li>`).join('')}
+            </ul>
+          </div>
         </div>
+
+        ${analysis.keyInsights && analysis.keyInsights.length > 0 ? `
+          <div class="pb-section pb-insights">
+            <h4>🔍 Key Insights</h4>
+            <ul>
+              ${analysis.keyInsights.map(insight => `<li>${insight}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+
+        ${isAgentBased && analysis.agentWorkflow?.results?.finalRecommendation?.nextSteps ? `
+          <div class="pb-section pb-next-steps">
+            <h4>📋 Agent Suggested Next Steps</h4>
+            <ol>
+              ${analysis.agentWorkflow.results.finalRecommendation.nextSteps.map(step => 
+                `<li>${step}</li>`
+              ).join('')}
+            </ol>
+          </div>
+        ` : ''}
       </div>
+
+      ${this.renderMetadata(analysis)}
     `;
   }
 
@@ -184,21 +211,16 @@ class PromptBridgeWidget {
       : 0;
 
     return `
-      <div class="promptbridge-debug-panel" id="pb-debug-panel" style="display: none;">
-        <div class="promptbridge-debug-title">Debug Information</div>
-        <div class="promptbridge-debug-item">Extraction: ${extractionSuccess}/${extractionTotal} successful</div>
-        <div class="promptbridge-debug-item">Site: ${productData.source?.site || 'Unknown'}</div>
-        <div class="promptbridge-debug-item">Product Type: ${productData.productType || 'Unknown'}</div>
-        <div class="promptbridge-debug-item">ASIN: ${productData.asin || 'N/A'}</div>
-        ${analysis ? `
-          <div class="promptbridge-debug-item">AI Processing: ${analysis.metadata?.processingTime || 'N/A'}ms</div>
-          <div class="promptbridge-debug-item">Analysis Quality: ${analysis.error ? 'Error' : 'Success'}</div>
-        ` : ''}
+      <div class="pb-metadata">
+        <small>
+          ⏱️ Processed in ${analysis.metadata.processingTime}ms
+          ${analysis.isAgentBased ? ' | 🤖 Agent Mode' : ' | 📊 Simple Mode'}
+        </small>
       </div>
     `;
   }
 
-  static setupEventListeners(widget) {
+  static update(analysisData) {
     try {
       PromptBridgeHelpers.log('🔗 Setting up widget event listeners...');
 
@@ -247,20 +269,16 @@ class PromptBridgeWidget {
         });
       }
 
-      const compareBtn = widget.querySelector('#pb-compare');
-      if (compareBtn) {
-        compareBtn.addEventListener('click', () => {
-          PromptBridgeHelpers.log('👆 Compare button clicked');
-          this.handleCompare();
-        });
+      const widget = document.getElementById(this.widgetId);
+      if (!widget) {
+        PromptBridgeHelpers.error('❌ Widget not found for update');
+        return false;
       }
 
-      const saveBtn = widget.querySelector('#pb-save');
-      if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
-          PromptBridgeHelpers.log('👆 Save button clicked');
-          this.handleSave();
-        });
+      const contentDiv = widget.querySelector('.pb-content');
+      if (!contentDiv) {
+        PromptBridgeHelpers.error('❌ Content div not found');
+        return false;
       }
 
       PromptBridgeHelpers.log('✅ Event listeners setup completed');
@@ -307,17 +325,11 @@ class PromptBridgeWidget {
         currentX = Math.max(0, Math.min(currentX, maxX));
         currentY = Math.max(0, Math.min(currentY, maxY));
 
-        widget.style.left = currentX + 'px';
-        widget.style.top = currentY + 'px';
-        widget.style.right = 'auto';
-      });
+      // Update content with analysis
+      contentDiv.innerHTML = productInfoHTML + this.renderAnalysis(analysisData);
 
-      document.addEventListener('mouseup', () => {
-        if (isDragging) {
-          isDragging = false;
-          header.style.cursor = 'move';
-          PromptBridgeHelpers.log('🖱️ Drag ended', { x: currentX, y: currentY });
-        }
+      PromptBridgeHelpers.log('✅ Widget updated successfully', {
+        isAgentBased: analysisData.isAgentBased
       });
 
       header.style.cursor = 'move';
@@ -365,46 +377,30 @@ class PromptBridgeWidget {
       }
     } catch (error) {
       PromptBridgeHelpers.error('❌ Widget update failed', error);
+      return false;
     }
   }
 
-  static toggle() {
-    if (!this.instance) return;
-
-    try {
-      const content = this.instance.querySelector('.promptbridge-content');
-      const minimizeBtn = this.instance.querySelector('#pb-minimize');
-
-      if (this.instance.classList.contains('minimized')) {
-        this.instance.classList.remove('minimized');
-        content.style.display = 'block';
-        minimizeBtn.textContent = '−';
-        PromptBridgeHelpers.log('📖 Widget expanded');
-      } else {
-        this.instance.classList.add('minimized');
-        content.style.display = 'none';
-        minimizeBtn.textContent = '+';
-        PromptBridgeHelpers.log('📕 Widget minimized');
-      }
-    } catch (error) {
-      PromptBridgeHelpers.error('❌ Widget toggle failed', error);
+  static setupEventListeners(widget) {
+    // Close button
+    const closeBtn = widget.querySelector('.pb-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.remove());
     }
+
+    // Make widget draggable (optional)
+    this.makeDraggable(widget);
   }
 
-  static toggleDebugPanel() {
-    if (!this.instance) return;
+  static makeDraggable(widget) {
+    const header = widget.querySelector('.pb-header');
+    let isDragging = false;
+    let currentX;
+    let currentY;
+    let initialX;
+    let initialY;
 
-    try {
-      const debugPanel = this.instance.querySelector('#pb-debug-panel');
-      if (debugPanel) {
-        const isVisible = debugPanel.style.display !== 'none';
-        debugPanel.style.display = isVisible ? 'none' : 'block';
-        PromptBridgeHelpers.log(`🐛 Debug panel ${isVisible ? 'hidden' : 'shown'}`);
-      }
-    } catch (error) {
-      PromptBridgeHelpers.error('❌ Debug panel toggle failed', error);
-    }
-  }
+    header.style.cursor = 'move';
 
   static handleRefresh() {
     try {
@@ -710,23 +706,35 @@ class PromptBridgeWidget {
   }
 
   static remove() {
-    try {
-      if (this.instance) {
-        PromptBridgeHelpers.log('🗑️ Removing widget...');
-        this.instance.remove();
-        this.instance = null;
-        this.isVisible = false;
-        PromptBridgeHelpers.log('✅ Widget removed successfully');
-      }
-    } catch (error) {
-      PromptBridgeHelpers.error('❌ Widget removal failed', error);
+    const widget = document.getElementById(this.widgetId);
+    if (widget) {
+      widget.remove();
+      this.currentWidget = null;
+      PromptBridgeHelpers.log('🗑️ Widget removed');
     }
   }
 
   static isPresent() {
-    return this.instance !== null && this.isVisible;
+    return !!document.getElementById(this.widgetId);
+  }
+
+  static getPosition() {
+    const widget = document.getElementById(this.widgetId);
+    if (!widget) return null;
+    
+    const rect = widget.getBoundingClientRect();
+    return {
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height
+    };
+  }
+
+  static truncate(text, length) {
+    if (!text) return '';
+    return text.length > length ? text.substring(0, length) + '...' : text;
   }
 }
 
-// Make widget available globally
 window.PromptBridgeWidget = PromptBridgeWidget;

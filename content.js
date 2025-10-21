@@ -1,10 +1,11 @@
-// PromptBridge Content Script - Main orchestration with detailed logging
+// PromptBridge Content Script - Main orchestration with Agent Workflow
 class PromptBridgeMain {
   static currentProductData = null;
   static currentAnalysis = null;
   static isInitialized = false;
   static initAttempts = 0;
   static maxInitAttempts = 3;
+  static useAgentWorkflow = true; // Toggle agent mode
 
   static async initialize() {
     try {
@@ -12,12 +13,13 @@ class PromptBridgeMain {
       PromptBridgeHelpers.log('🚀 PromptBridge initializing...', {
         attempt: this.initAttempts,
         url: window.location.href,
+        agentMode: this.useAgentWorkflow,
         timestamp: new Date().toISOString()
       });
 
       // Wait for page to be fully loaded
       if (document.readyState === 'loading') {
-        PromptBridgeHelpers.log('📄 Page still loading, waiting...');
+        PromptBridgeHelpers.log('🔄 Page still loading, waiting...');
         document.addEventListener('DOMContentLoaded', () => this.initialize());
         return;
       }
@@ -69,7 +71,7 @@ class PromptBridgeMain {
         return;
       }
 
-      // Start AI analysis
+      // Start AI analysis (with or without agent workflow)
       this.analyzeCurrentProduct();
 
       this.isInitialized = true;
@@ -82,6 +84,7 @@ class PromptBridgeMain {
           ? PromptBridgeTranslator.getCurrentLanguage()
           : 'en',
         translatorReady: translatorInitialized
+        agentModeEnabled: this.useAgentWorkflow
       });
 
       // Setup page change monitoring
@@ -108,7 +111,8 @@ class PromptBridgeMain {
       PromptBridgeHelpers.log('🧠 Starting AI analysis of current product...', {
         productTitle: this.currentProductData.title,
         price: this.currentProductData.price,
-        site: this.currentProductData.source.site
+        site: this.currentProductData.source.site,
+        agentMode: this.useAgentWorkflow
       });
 
       // Show loading state in the widget (disables language selector) while analysis is running
@@ -123,13 +127,28 @@ class PromptBridgeMain {
       // Perform AI analysis
       this.currentAnalysis = await PromptProcessor.analyzeProduct(this.currentProductData);
 
+      // Choose analysis method: Agent Workflow vs. Simple Analysis
+      if (this.useAgentWorkflow && window.AgentWorkflowOrchestrator) {
+        PromptBridgeHelpers.log('🤖 Using AGENT WORKFLOW for analysis...');
+        this.currentAnalysis = await AgentWorkflowOrchestrator.executeAgentWorkflow(
+          this.currentProductData
+        );
+      } else {
+        PromptBridgeHelpers.log('📊 Using SIMPLE analysis (no agent)...');
+        this.currentAnalysis = await PromptProcessor.analyzeProduct(
+          this.currentProductData
+        );
+      }
+      
       if (this.currentAnalysis.error) {
         PromptBridgeHelpers.error('❌ AI analysis completed with errors', this.currentAnalysis.error);
       } else {
         PromptBridgeHelpers.log('✅ AI analysis completed successfully', {
           hasRecommendation: !!this.currentAnalysis.recommendation,
           valueAssessment: this.currentAnalysis.valueAssessment,
-          processingTime: this.currentAnalysis.metadata?.processingTime
+          processingTime: this.currentAnalysis.metadata?.processingTime,
+          isAgentBased: this.currentAnalysis.isAgentBased || false,
+          agentSteps: this.currentAnalysis.agentWorkflow?.steps?.length || 0
         });
       }
 
@@ -306,6 +325,15 @@ class PromptBridgeMain {
       PromptBridgeHelpers.error('❌ Failed to retrieve product history', error);
       return [];
     }
+  }
+
+  // Debug method to toggle agent mode
+  static toggleAgentMode() {
+    this.useAgentWorkflow = !this.useAgentWorkflow;
+    PromptBridgeHelpers.log('🔄 Agent mode toggled', {
+      agentMode: this.useAgentWorkflow
+    });
+    return this.useAgentWorkflow;
   }
 }
 
