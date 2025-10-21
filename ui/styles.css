@@ -1,327 +1,540 @@
-/* PromptBridge Extension Styles */
+/* PromptBridge Widget Styles with Agent Thinking Visualization */
+
 .promptbridge-widget {
-  position: fixed !important;
-  top: 20px !important;
-  right: 20px !important;
-  width: 350px !important;
-  max-height: 80vh !important;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
-  z-index: 2147483647 !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-  color: white !important;
-  overflow: hidden !important;
-  border: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  transition: all 0.3s ease !important;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 420px;
+  max-height: 90vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  z-index: 999999;
+  overflow: hidden;
+  animation: slideIn 0.3s ease-out;
 }
 
-.promptbridge-widget.minimized {
-  width: 200px !important;
-  height: 60px !important;
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
-.promptbridge-header {
-  background: rgba(0, 0, 0, 0.2) !important;
-  padding: 12px 16px !important;
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  cursor: move !important;
+/* Header */
+.pb-header {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.promptbridge-title {
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  margin: 0 !important;
-  color: white !important;
+.pb-logo {
+  font-weight: 600;
+  font-size: 16px;
+  color: white;
 }
 
-.promptbridge-controls {
-  display: flex !important;
-  gap: 8px !important;
+.pb-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
-.promptbridge-btn {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border: none !important;
-  border-radius: 6px !important;
-  color: white !important;
-  cursor: pointer !important;
-  padding: 4px 8px !important;
-  font-size: 12px !important;
-  transition: background 0.2s ease !important;
+.pb-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
 }
 
-.promptbridge-btn:hover {
-  background: rgba(255, 255, 255, 0.3) !important;
+/* Content */
+.pb-content {
+  background: white;
+  max-height: calc(90vh - 64px);
+  overflow-y: auto;
+  padding: 20px;
 }
 
-.promptbridge-content {
-  padding: 16px !important;
-  max-height: calc(80vh - 60px) !important;
-  overflow-y: auto !important;
+.pb-content::-webkit-scrollbar {
+  width: 8px;
 }
 
-.promptbridge-content::-webkit-scrollbar {
-  width: 6px !important;
+.pb-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
 }
 
-.promptbridge-content::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-radius: 3px !important;
+.pb-content::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 4px;
 }
 
-.promptbridge-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3) !important;
-  border-radius: 3px !important;
+/* Product Info */
+.pb-product-info {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f0f0f0;
 }
 
-.promptbridge-loading {
-  text-align: center !important;
-  padding: 20px !important;
+.pb-product-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
 }
 
-.promptbridge-spinner {
-  width: 24px !important;
-  height: 24px !important;
-  border: 2px solid rgba(255, 255, 255, 0.3) !important;
-  border-top: 2px solid white !important;
-  border-radius: 50% !important;
-  animation: promptbridge-spin 1s linear infinite !important;
-  margin: 0 auto 10px !important;
+.pb-product-meta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-@keyframes promptbridge-spin {
+.pb-price {
+  font-size: 24px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.pb-rating {
+  font-size: 14px;
+  color: #718096;
+}
+
+/* Loading State */
+.pb-loading {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.pb-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-.promptbridge-product-title {
-  font-size: 14px !important;
-  font-weight: 600 !important;
-  margin-bottom: 8px !important;
-  line-height: 1.3 !important;
-  color: white !important;
+.pb-agent-status {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f7fafc;
+  border-radius: 8px;
 }
 
-.promptbridge-product-price {
-  font-size: 18px !important;
-  font-weight: 700 !important;
-  margin-bottom: 8px !important;
-  color: #4ade80 !important;
+.pb-thinking-dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
 }
 
-.promptbridge-product-original-price {
-  font-size: 14px !important;
-  text-decoration: line-through !important;
-  color: rgba(255, 255, 255, 0.7) !important;
-  margin-left: 8px !important;
+.pb-thinking-dots span {
+  width: 8px;
+  height: 8px;
+  background: #667eea;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
 }
 
-.promptbridge-product-rating {
-  display: flex !important;
-  align-items: center !important;
-  margin-bottom: 12px !important;
-  font-size: 14px !important;
+.pb-thinking-dots span:nth-child(1) {
+  animation-delay: -0.32s;
 }
 
-.promptbridge-stars {
-  color: #fbbf24 !important;
-  margin-right: 8px !important;
+.pb-thinking-dots span:nth-child(2) {
+  animation-delay: -0.16s;
 }
 
-.promptbridge-section {
-  margin-bottom: 16px !important;
-}
-
-.promptbridge-section-title {
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  margin-bottom: 8px !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-}
-
-.promptbridge-recommendation {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-radius: 8px !important;
-  padding: 12px !important;
-  font-size: 14px !important;
-  line-height: 1.4 !important;
-  color: white !important;
-}
-
-.promptbridge-pros-cons {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 12px !important;
-}
-
-.promptbridge-pros, .promptbridge-cons {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border-radius: 6px !important;
-  padding: 10px !important;
-}
-
-.promptbridge-pros-title {
-  color: #4ade80 !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  margin-bottom: 6px !important;
-}
-
-.promptbridge-cons-title {
-  color: #f87171 !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  margin-bottom: 6px !important;
-}
-
-.promptbridge-list {
-  list-style: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-.promptbridge-list li {
-  font-size: 12px !important;
-  line-height: 1.3 !important;
-  margin-bottom: 4px !important;
-  padding-left: 12px !important;
-  position: relative !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-.promptbridge-list li:before {
-  content: "•" !important;
-  position: absolute !important;
-  left: 0 !important;
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-
-.promptbridge-value-badge {
-  display: inline-block !important;
-  padding: 4px 8px !important;
-  border-radius: 12px !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-}
-
-.value-excellent {
-  background: #059669 !important;
-  color: white !important;
-}
-
-.value-good {
-  background: #0891b2 !important;
-  color: white !important;
-}
-
-.value-fair {
-  background: #d97706 !important;
-  color: white !important;
-}
-
-.value-poor {
-  background: #dc2626 !important;
-  color: white !important;
-}
-
-.promptbridge-actions {
-  display: flex !important;
-  gap: 8px !important;
-  margin-top: 16px !important;
-  padding-top: 16px !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-.promptbridge-action-btn {
-  flex: 1 !important;
-  background: rgba(255, 255, 255, 0.2) !important;
-  border: none !important;
-  border-radius: 6px !important;
-  color: white !important;
-  cursor: pointer !important;
-  padding: 8px 12px !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  transition: all 0.2s ease !important;
-}
-
-.promptbridge-action-btn:hover {
-  background: rgba(255, 255, 255, 0.3) !important;
-  transform: translateY(-1px) !important;
-}
-
-.promptbridge-action-btn:active {
-  transform: translateY(0) !important;
-}
-
-.promptbridge-error {
-  background: rgba(220, 38, 38, 0.2) !important;
-  border: 1px solid rgba(220, 38, 38, 0.3) !important;
-  border-radius: 8px !important;
-  padding: 12px !important;
-  color: #fca5a5 !important;
-  font-size: 13px !important;
-  text-align: center !important;
-}
-
-.promptbridge-debug-panel {
-  background: rgba(0, 0, 0, 0.3) !important;
-  border-radius: 6px !important;
-  padding: 8px !important;
-  margin-top: 12px !important;
-  font-family: 'Monaco', 'Menlo', monospace !important;
-  font-size: 11px !important;
-  max-height: 150px !important;
-  overflow-y: auto !important;
-}
-
-.promptbridge-debug-title {
-  color: rgba(255, 255, 255, 0.7) !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  margin-bottom: 6px !important;
-  text-transform: uppercase !important;
-}
-
-.promptbridge-debug-item {
-  color: rgba(255, 255, 255, 0.8) !important;
-  margin-bottom: 2px !important;
-}
-
-/* Animation for widget appearance */
-@keyframes promptbridge-fadein {
-  from {
-    opacity: 0;
-    transform: translateX(100%);
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
   }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+  40% {
+    transform: scale(1);
   }
 }
 
-.promptbridge-widget.animate-in {
-  animation: promptbridge-fadein 0.3s ease-out !important;
+.pb-status-text {
+  font-size: 13px;
+  color: #4a5568;
+  margin: 0;
 }
 
-/* Responsive adjustments */
+/* Agent Thinking Section */
+.pb-agent-thinking {
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border: 2px solid #667eea;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.pb-thinking-toggle {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #667eea;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.pb-thinking-toggle:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.pb-toggle-icon {
+  transition: transform 0.3s;
+}
+
+.pb-agent-thinking.expanded .pb-toggle-icon {
+  transform: rotate(180deg);
+}
+
+.pb-thinking-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.pb-agent-thinking.expanded .pb-thinking-content {
+  max-height: 1000px;
+  padding: 0 16px 16px 16px;
+}
+
+.pb-thinking-content h5 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a5568;
+  margin: 16px 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Steps List */
+.pb-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pb-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: white;
+  border-radius: 8px;
+  border-left: 3px solid #667eea;
+}
+
+.pb-step-number {
+  width: 24px;
+  height: 24px;
+  background: #667eea;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.pb-step-name {
+  flex: 1;
+  font-size: 13px;
+  color: #2d3748;
+  font-weight: 500;
+}
+
+.pb-step-status {
+  color: #48bb78;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Decision Cards */
+.pb-thinking-decisions {
+  margin-top: 16px;
+}
+
+.pb-decision-card {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-left: 3px solid #764ba2;
+}
+
+.pb-decision-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.pb-decision-header strong {
+  color: #2d3748;
+  font-size: 13px;
+}
+
+.pb-decision-result {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pb-decision-result.yes {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.pb-decision-result.no {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+.pb-decision-reasoning {
+  font-size: 12px;
+  color: #4a5568;
+  line-height: 1.5;
+}
+
+.pb-decision-reasoning ul {
+  margin: 4px 0 0 0;
+  padding-left: 20px;
+}
+
+.pb-decision-reasoning li {
+  margin-bottom: 4px;
+}
+
+/* Search Terms */
+.pb-search-terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pb-search-term {
+  background: white;
+  color: #667eea;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  border: 1px solid #667eea;
+  font-weight: 500;
+}
+
+/* Analysis Sections */
+.pb-section {
+  margin-bottom: 20px;
+}
+
+.pb-section h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 12px 0;
+}
+
+.pb-recommendation p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #4a5568;
+  margin: 0;
+}
+
+.pb-agent-decision {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f7fafc;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pb-decision-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.pb-decision-buy {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.pb-decision-consider {
+  background: #feebc8;
+  color: #7c2d12;
+}
+
+.pb-decision-skip {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+.pb-confidence {
+  font-size: 12px;
+  color: #718096;
+}
+
+/* Value Badge */
+.pb-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.pb-badge-excellent {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.pb-badge-good {
+  background: #bee3f8;
+  color: #2c5282;
+}
+
+.pb-badge-fair {
+  background: #feebc8;
+  color: #7c2d12;
+}
+
+.pb-badge-poor {
+  background: #fed7d7;
+  color: #742a2a;
+}
+
+.pb-badge-unknown {
+  background: #e2e8f0;
+  color: #4a5568;
+}
+
+/* Pros & Cons */
+.pb-pros-cons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.pb-pros h4,
+.pb-cons h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pb-pros ul,
+.pb-cons ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4a5568;
+}
+
+.pb-pros li,
+.pb-cons li {
+  margin-bottom: 8px;
+}
+
+/* Insights */
+.pb-insights ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4a5568;
+}
+
+.pb-insights li {
+  margin-bottom: 8px;
+}
+
+/* Next Steps */
+.pb-next-steps {
+  background: #f7fafc;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 3px solid #667eea;
+}
+
+.pb-next-steps ol {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4a5568;
+}
+
+.pb-next-steps li {
+  margin-bottom: 8px;
+}
+
+/* Metadata */
+.pb-metadata {
+  text-align: center;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 16px;
+}
+
+.pb-metadata small {
+  color: #718096;
+  font-size: 12px;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
   .promptbridge-widget {
-    width: calc(100vw - 40px) !important;
-    right: 20px !important;
-    left: 20px !important;
+    width: calc(100% - 40px);
+    left: 20px;
+    right: 20px;
   }
-  
-  .promptbridge-pros-cons {
-    grid-template-columns: 1fr !important;
+
+  .pb-pros-cons {
+    grid-template-columns: 1fr;
   }
 }
