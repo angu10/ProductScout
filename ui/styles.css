@@ -600,6 +600,248 @@
   background: #e53e3e;
 }
 
+/* Product Availability Section */
+.pb-product-availability {
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+  border-radius: 8px;
+  border: 1px solid #68d391;
+}
+
+.pb-product-availability h4 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.pb-search-note {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: #e6fffa;
+  border: 1px solid #68d391;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.pb-search-note p {
+  margin: 0;
+  font-size: 12px;
+  color: #2d7d32;
+  font-weight: 500;
+}
+
+.pb-availability-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.pb-availability-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  transition: all 0.2s ease;
+}
+
+.pb-availability-card:hover {
+  border-color: #68d391;
+  box-shadow: 0 2px 8px rgba(104, 211, 145, 0.1);
+  transform: translateY(-1px);
+}
+
+.pb-availability-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.pb-site-icon {
+  font-size: 16px;
+}
+
+.pb-site-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d3748;
+  flex: 1;
+}
+
+.pb-availability-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.pb-availability-badge.available {
+  background: #68d391;
+  color: white;
+}
+
+.pb-availability-details {
+  margin-bottom: 12px;
+}
+
+.pb-price-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.pb-price {
+  font-size: 16px;
+  font-weight: 700;
+  color: #68d391;
+}
+
+.pb-rating {
+  font-size: 12px;
+  color: #4a5568;
+}
+
+.pb-availability-status, .pb-condition {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.pb-status-label, .pb-condition-label {
+  color: #4a5568;
+  font-weight: 500;
+}
+
+.pb-status-value {
+  color: #38a169;
+  font-weight: 600;
+}
+
+.pb-condition-value {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.pb-availability-actions {
+  text-align: center;
+}
+
+.pb-view-product-btn {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #68d391;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.pb-view-product-btn:hover {
+  background: #48bb78;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(104, 211, 145, 0.3);
+}
+
+.pb-not-available {
+  margin-top: 16px;
+  padding: 12px;
+  background: #f7fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.pb-not-available h5 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.pb-not-available-sites {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pb-not-available-site {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.pb-not-available-badge {
+  background: #fed7d7;
+  color: #c53030;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.pb-no-products-found {
+  text-align: center;
+  padding: 20px;
+  color: #4a5568;
+}
+
+.pb-no-products-found p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+}
+
+.pb-searched-sites {
+  margin-top: 16px;
+  padding: 12px;
+  background: #f7fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.pb-searched-sites h5 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.pb-sites-checked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.pb-site-checked {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.pb-check-status {
+  background: #bee3f8;
+  color: #2c5282;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .promptbridge-widget {
@@ -609,6 +851,10 @@
   }
 
   .pb-pros-cons {
+    grid-template-columns: 1fr;
+  }
+
+  .pb-availability-grid {
     grid-template-columns: 1fr;
   }
 }

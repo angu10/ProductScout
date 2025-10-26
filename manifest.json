@@ -33,6 +33,7 @@
         "agents/extractor.js",
         "ai/prompt-processor.js",
         "ai/agent-orchestrator.js",
+        "ai/product-availability-checker.js",
         "ai/translator-service.js",
         "ui/widget.js",
         "content.js"

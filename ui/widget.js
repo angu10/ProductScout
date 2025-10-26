@@ -186,6 +186,8 @@ class PromptBridgeWidget {
             </ol>
           </div>
         ` : ''}
+
+        ${this.renderProductAvailability(analysis)}
       </div>
 
       ${this.renderMetadata(analysis)}
@@ -265,6 +267,140 @@ class PromptBridgeWidget {
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ') + '?';
+  }
+
+  static renderProductAvailability(analysis) {
+    const labels = {
+      'en': {
+        availability: '🛒 Available On Other Sites',
+        price: 'Price',
+        rating: 'Rating',
+        reviews: 'reviews',
+        availability: 'Availability',
+        viewProduct: 'View Product',
+        notAvailable: 'Not Available',
+        checking: 'Checking availability...'
+      },
+      'fr': {
+        availability: '🛒 Disponible sur d\'Autres Sites',
+        price: 'Prix',
+        rating: 'Note',
+        reviews: 'avis',
+        availability: 'Disponibilité',
+        viewProduct: 'Voir le Produit',
+        notAvailable: 'Non Disponible',
+        checking: 'Vérification de la disponibilité...'
+      }
+    };
+
+    const currentLabels = labels[this.currentLanguage] || labels['en'];
+    
+    // Get availability results from agent workflow
+    const availabilityResults = analysis.agentWorkflow?.results?.productAvailability;
+    
+    if (!availabilityResults || availabilityResults.length === 0) {
+      return '';
+    }
+
+    const foundProducts = availabilityResults.filter(result => result.found);
+    const notFoundProducts = availabilityResults.filter(result => !result.found);
+
+    // If no products found on any site, show a helpful message
+    if (foundProducts.length === 0) {
+      return `
+        <div class="pb-section pb-product-availability">
+          <h4>${currentLabels.availability}</h4>
+          <div class="pb-no-products-found">
+            <p>🔍 Product availability check completed</p>
+            <p>This product was not found on other major e-commerce sites.</p>
+            <div class="pb-searched-sites">
+              <h5>Sites checked:</h5>
+              <div class="pb-sites-checked">
+                ${availabilityResults.map(result => `
+                  <div class="pb-site-checked">
+                    <span class="pb-site-icon">${result.icon}</span>
+                    <span class="pb-site-name">${result.website}</span>
+                    <span class="pb-check-status">Checked</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="pb-section pb-product-availability">
+        <h4>${currentLabels.availability}</h4>
+        
+        <div class="pb-search-note">
+          <p>🔍 Showing search results for similar products on other sites</p>
+        </div>
+        
+        <div class="pb-availability-grid">
+          ${foundProducts.map(result => `
+            <div class="pb-availability-card">
+              <div class="pb-availability-header">
+                <span class="pb-site-icon">${result.icon}</span>
+                <span class="pb-site-name">${result.website}</span>
+                <span class="pb-availability-badge available">Available</span>
+              </div>
+              
+              <div class="pb-availability-details">
+                <div class="pb-price-info">
+                  <span class="pb-price">$${result.product.price}</span>
+                  ${result.product.rating ? `
+                    <span class="pb-rating">
+                      ⭐ ${result.product.rating}/5
+                      ${result.product.reviewCount ? `(${result.product.reviewCount.toLocaleString()} ${currentLabels.reviews})` : ''}
+                    </span>
+                  ` : ''}
+                </div>
+                
+                ${result.product.availability ? `
+                  <div class="pb-availability-status">
+                    <span class="pb-status-label">${currentLabels.availability}:</span>
+                    <span class="pb-status-value">${result.product.availability}</span>
+                  </div>
+                ` : ''}
+                
+                ${result.product.condition ? `
+                  <div class="pb-condition">
+                    <span class="pb-condition-label">Condition:</span>
+                    <span class="pb-condition-value">${result.product.condition}</span>
+                  </div>
+                ` : ''}
+              </div>
+              
+              <div class="pb-availability-actions">
+                <a href="${result.product.url}" 
+                   target="_blank" 
+                   class="pb-view-product-btn"
+                   title="Search for this product on ${result.website}">
+                  ${result.product.searchType === 'search_results' ? 'Search on ' + result.website : currentLabels.viewProduct}
+                </a>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        ${notFoundProducts.length > 0 ? `
+          <div class="pb-not-available">
+            <h5>Sites where product is not available:</h5>
+            <div class="pb-not-available-sites">
+              ${notFoundProducts.map(result => `
+                <div class="pb-not-available-site">
+                  <span class="pb-site-icon">${result.icon}</span>
+                  <span class="pb-site-name">${result.website}</span>
+                  <span class="pb-not-available-badge">${currentLabels.notAvailable}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
   }
 
   static renderMetadata(analysis) {

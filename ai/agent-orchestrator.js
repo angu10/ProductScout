@@ -44,6 +44,25 @@ class AgentWorkflowOrchestrator {
       
       PromptBridgeHelpers.log('✅ Search terms generated:', searchTerms);
 
+      // STEP 2.5: Check product availability on other websites
+      workflow.steps.push('check_product_availability');
+      PromptBridgeHelpers.log('🔍 Step 2.5: Checking product availability across websites...');
+      
+      let availabilityResults = [];
+      if (window.ProductAvailabilityChecker) {
+        try {
+          availabilityResults = await ProductAvailabilityChecker.checkProductAvailability(productData);
+          workflow.results.productAvailability = availabilityResults;
+          PromptBridgeHelpers.log('✅ Product availability check completed:', {
+            websitesChecked: 4,
+            productsFound: availabilityResults.filter(r => r.found).length
+          });
+        } catch (error) {
+          PromptBridgeHelpers.error('❌ Product availability check failed', error);
+          workflow.results.productAvailability = [];
+        }
+      }
+
       // STEP 3: Decide if we need deeper analysis (always yes for thorough agent)
       workflow.steps.push('deeper_analysis');
       const needsDeeperAnalysis = this.decideNeedsDeeperAnalysis(analysis);
