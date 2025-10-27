@@ -239,3 +239,10 @@ For testing issues:
 **Happy Testing! 🛍️✨**
 
 *Phase 1 MVP - Chrome Built-in AI Challenge 2025*
+
+Learnings:
+
+ Limited Debuggability & Model Transparency: Few a times model gives inconsistent summaries or recommendations.And difficult to optimize prompts or reproduce behavior
+
+ Browser Permission constraints:
+ Seen a times the API callout gives the "AI model not initialized" error,difficult with coordinate between background and content
