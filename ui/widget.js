@@ -385,20 +385,6 @@ class PromptBridgeWidget {
           `).join('')}
         </div>
 
-        ${notFoundProducts.length > 0 ? `
-          <div class="pb-not-available">
-            <h5>Sites where product is not available:</h5>
-            <div class="pb-not-available-sites">
-              ${notFoundProducts.map(result => `
-                <div class="pb-not-available-site">
-                  <span class="pb-site-icon">${result.icon}</span>
-                  <span class="pb-site-name">${result.website}</span>
-                  <span class="pb-not-available-badge">${currentLabels.notAvailable}</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        ` : ''}
       </div>
     `;
   }
