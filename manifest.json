@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Agent-Powered PromptBridge",
+  "name": "ProductScout",
   "version": "1.0.0",
   "description": "AI-powered e-commerce product analysis using Chrome Built-in AI APIs",
   "permissions": [
@@ -45,7 +45,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "PromptBridge"
+    "default_title": "ProductScout"
   },
   "icons": {
     "16": "assets/icons/icon16.png",

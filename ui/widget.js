@@ -23,7 +23,7 @@ class PromptBridgeWidget {
       // Widget HTML structure
       widget.innerHTML = `
         <div class="pb-header">
-          <span class="pb-logo">🤖 PromptBridge AI</span>
+          <span class="pb-logo">🛍️ ProductScout</span>
           <div class="pb-language-selector">
             <select id="pb-language-select" ${this.isAnalyzing ? 'disabled' : ''}>
               <option value="en" ${this.currentLanguage === 'en' ? 'selected' : ''}>🇺🇸 English</option>
