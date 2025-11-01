@@ -65,7 +65,7 @@ promptbridge/
 
 ### Usage
 
-1. **Visit Amazon Product**: Navigate to any product page (e.g., https://www.amazon.com/dp/B08N5WRWNW)
+1. **Visit Amazon Product**: Navigate to any product page (e.g., [https://www.amazon.com/dp/B0DLHDCN6P?th=1])
 2. **Automatic Detection**: Widget appears in top-right corner within 2-3 seconds
 3. **AI Analysis**: Wait 3-5 seconds for recommendations
 4. **Explore Features**: Drag widget, switch languages, view agent thinking
