@@ -8,7 +8,7 @@
 2. Go to `chrome://extensions/`
 3. Turn ON "Developer mode" (toggle in top right)
 4. Click "Load unpacked"
-5. Navigate to and select: `/Users/angu/Documents/GitHub/google-chrome-agent/`
+5. Navigate to and select: `/Users/angu/Documents/GitHub/chrome-agent/`
 6. The extension should appear with a shopping bag icon 🛍️
 
 ### 2. Test on Amazon
@@ -119,7 +119,11 @@ https://www.amazon.com/dp/[10-character-code]
 **Error in chrome://extensions/:**
 
 **Solutions:**
+<<<<<<< HEAD
+1. Check file path is correct: `/Users/angu/Documents/GitHub/chrome-agent/`
+=======
 1. Check file path is correct: `/Users/angu/Documents/GitHub/google-chrome-agent/`
+>>>>>>> c84caf50405e71ab559d359986bb8f09a767f671
 2. Verify `manifest.json` exists in that folder
 3. Try "Reload" button in extensions page
 4. Check console for specific error messages

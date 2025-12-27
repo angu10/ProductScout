@@ -1,37 +1,67 @@
-// PromptBridge UI Widget with detailed logging
+// Enhanced Widget with Agent Thinking Visualization and Language Support
 class PromptBridgeWidget {
-  static instance = null;
-  static isVisible = false;
-  static isDragging = false;
-  static debugMode = true; // Enable for development
+  static widgetId = 'promptbridge-widget';
+  static currentWidget = null;
+  static currentLanguage = 'en';
+  static isAnalyzing = false;
 
-  static create(productData, analysis = null) {
+  static create(productData, analysisData = null) {
     try {
-      PromptBridgeHelpers.log('🎨 Creating PromptBridge widget...');
-      
+      PromptBridgeHelpers.log('🎨 Creating widget...', {
+        hasProductData: !!productData,
+        hasAnalysis: !!analysisData
+      });
+
       // Remove existing widget if present
       this.remove();
 
+      // Create widget container
       const widget = document.createElement('div');
-      widget.id = 'promptbridge-widget';
-      widget.className = 'promptbridge-widget animate-in';
+      widget.id = this.widgetId;
+      widget.className = 'promptbridge-widget';
       
-      widget.innerHTML = this.generateWidgetHTML(productData, analysis);
-      
+      // Widget HTML structure
+      widget.innerHTML = `
+        <div class="pb-header">
+          <span class="pb-logo">🛍️ ProductScout</span>
+          <div class="pb-language-selector">
+            <select id="pb-language-select" ${this.isAnalyzing ? 'disabled' : ''}>
+              <option value="en" ${this.currentLanguage === 'en' ? 'selected' : ''}>🇺🇸 English</option>
+              <option value="fr" ${this.currentLanguage === 'fr' ? 'selected' : ''}>🇫🇷 Français</option>
+            </select>
+          </div>
+          <button class="pb-close" aria-label="Close">&times;</button>
+        </div>
+        
+        <div class="pb-content">
+          <div class="pb-product-info">
+            <h3 class="pb-product-title">${this.truncate(productData.title, 60)}</h3>
+            <div class="pb-product-meta">
+              <span class="pb-price">$${productData.price}</span>
+              ${productData.rating ? `
+                <span class="pb-rating">
+                  ⭐ ${productData.rating}/5
+                  ${productData.reviewCount ? `(${productData.reviewCount.toLocaleString()} reviews)` : ''}
+                </span>
+              ` : ''}
+            </div>
+          </div>
+
+          ${analysisData ? this.renderAnalysis(analysisData) : this.renderLoading()}
+        </div>
+      `;
+
+      // Add to page
       document.body.appendChild(widget);
-      this.instance = widget;
-      this.isVisible = true;
-      
+      this.currentWidget = widget;
+
       // Setup event listeners
       this.setupEventListeners(widget);
-      
-      // Make draggable
-      this.makeDraggable(widget);
-      
+
       PromptBridgeHelpers.log('✅ Widget created successfully', {
-        hasAnalysis: !!analysis,
-        widgetId: widget.id,
-        position: { top: '20px', right: '20px' }
+        hasAnalysis: !!analysisData,
+        widgetId: this.widgetId,
+        position: this.getPosition()
       });
 
       return widget;
@@ -41,399 +71,585 @@ class PromptBridgeWidget {
     }
   }
 
-  static generateWidgetHTML(productData, analysis) {
-    const hasAnalysis = analysis && !analysis.error;
-    
-    return `
-      <div class="promptbridge-header">
-        <h3 class="promptbridge-title">🛍️ PromptBridge</h3>
-        <div class="promptbridge-controls">
-          ${this.debugMode ? '<button class="promptbridge-btn" id="pb-debug-toggle">Debug</button>' : ''}
-          <button class="promptbridge-btn" id="pb-minimize">−</button>
-          <button class="promptbridge-btn" id="pb-close">×</button>
-        </div>
-      </div>
-      <div class="promptbridge-content" id="pb-content">
-        ${this.generateProductSection(productData)}
-        ${hasAnalysis ? this.generateAnalysisSection(analysis) : this.generateLoadingSection()}
-        ${this.generateActionsSection()}
-        ${this.debugMode ? this.generateDebugSection(productData, analysis) : ''}
-      </div>
-    `;
-  }
+  static renderLoading() {
+    const loadingMessages = {
+      'en': {
+        analyzing: '🧠 AI Agent analyzing product...',
+        status: 'Initializing agent workflow'
+      },
+      'fr': {
+        analyzing: '🧠 Agent IA analysant le produit...',
+        status: 'Initialisation du flux de travail de l\'agent'
+      }
+    };
 
-  static generateProductSection(productData) {
-    const priceDisplay = productData.originalPrice 
-      ? `<span class="promptbridge-product-price">$${productData.price}</span><span class="promptbridge-product-original-price">$${productData.originalPrice}</span>`
-      : `<span class="promptbridge-product-price">$${productData.price}</span>`;
-
-    const ratingDisplay = productData.rating 
-      ? `<div class="promptbridge-product-rating">
-           <span class="promptbridge-stars">${'★'.repeat(Math.floor(productData.rating))}${'☆'.repeat(5 - Math.floor(productData.rating))}</span>
-           <span>${productData.rating}/5 ${productData.reviewCount ? `(${productData.reviewCount} reviews)` : ''}</span>
-         </div>`
-      : '';
+    const messages = loadingMessages[this.currentLanguage] || loadingMessages['en'];
 
     return `
-      <div class="promptbridge-section">
-        <div class="promptbridge-product-title">${productData.title || 'Product Title'}</div>
-        ${productData.price ? priceDisplay : '<div class="promptbridge-error">Price not available</div>'}
-        ${ratingDisplay}
-        <div style="font-size: 12px; color: rgba(255, 255, 255, 0.7); margin-top: 8px;">
-          From ${productData.source.site} • ${productData.productType}
-        </div>
-      </div>
-    `;
-  }
-
-  static generateAnalysisSection(analysis) {
-    const valueClass = `value-${analysis.valueAssessment || 'unknown'}`;
-    
-    return `
-      <div class="promptbridge-section">
-        <div class="promptbridge-section-title">AI Analysis</div>
-        <div class="promptbridge-recommendation">
-          ${analysis.recommendation || 'Analysis in progress...'}
-        </div>
-        ${analysis.valueAssessment ? `
-          <div style="margin-top: 8px;">
-            <span class="promptbridge-value-badge ${valueClass}">${analysis.valueAssessment} value</span>
+      <div class="pb-loading">
+        <div class="pb-spinner"></div>
+        <p>${messages.analyzing}</p>
+        <div class="pb-agent-status">
+          <div class="pb-thinking-dots">
+            <span>.</span><span>.</span><span>.</span>
           </div>
-        ` : ''}
+          <p class="pb-status-text">${messages.status}</p>
+        </div>
       </div>
+    `;
+  }
+
+  static renderAnalysis(analysis) {
+    const isAgentBased = analysis.isAgentBased && analysis.agentWorkflow;
+    
+    const labels = {
+      'en': {
+        recommendation: '💡 Recommendation',
+        valueAssessment: '💰 Value Assessment',
+        pros: '✅ Pros',
+        cons: '⚠️ Cons',
+        keyInsights: '🔍 Key Insights',
+        nextSteps: '📋 Agent Suggested Next Steps',
+        agentDecision: 'Agent Decision:',
+        confidence: 'confidence'
+      },
+      'fr': {
+        recommendation: '💡 Recommandation',
+        valueAssessment: '💰 Évaluation de la Valeur',
+        pros: '✅ Avantages',
+        cons: '⚠️ Inconvénients',
+        keyInsights: '🔍 Idées Clés',
+        nextSteps: '📋 Étapes Suggérées par l\'Agent',
+        agentDecision: 'Décision de l\'Agent:',
+        confidence: 'confiance'
+      }
+    };
+
+    const currentLabels = labels[this.currentLanguage] || labels['en'];
+    
+    return `
+      ${isAgentBased ? this.renderAgentThinking(analysis.agentWorkflow) : ''}
       
-      ${analysis.pros && analysis.cons ? `
-        <div class="promptbridge-section">
-          <div class="promptbridge-section-title">Pros & Cons</div>
-          <div class="promptbridge-pros-cons">
-            <div class="promptbridge-pros">
-              <div class="promptbridge-pros-title">✓ Pros</div>
-              <ul class="promptbridge-list">
-                ${analysis.pros.map(pro => `<li>${pro}</li>`).join('')}
-              </ul>
+      <div class="pb-analysis">
+        <div class="pb-section pb-recommendation">
+          <h4>${currentLabels.recommendation}</h4>
+          <p>${analysis.recommendation}</p>
+          ${analysis.agentWorkflow?.results?.finalRecommendation ? `
+            <div class="pb-agent-decision">
+              <strong>${currentLabels.agentDecision}</strong> 
+              <span class="pb-decision-badge pb-decision-${analysis.agentWorkflow.results.finalRecommendation.decision}">
+                ${analysis.agentWorkflow.results.finalRecommendation.decision.toUpperCase()}
+              </span>
+              <span class="pb-confidence">
+                (${Math.round(analysis.agentWorkflow.results.finalRecommendation.confidence * 100)}% ${currentLabels.confidence})
+              </span>
             </div>
-            <div class="promptbridge-cons">
-              <div class="promptbridge-cons-title">⚠ Cons</div>
-              <ul class="promptbridge-list">
-                ${analysis.cons.map(con => `<li>${con}</li>`).join('')}
-              </ul>
+          ` : ''}
+        </div>
+
+        <div class="pb-section pb-value">
+          <h4>${currentLabels.valueAssessment}</h4>
+          <span class="pb-badge pb-badge-${analysis.valueAssessment}">${analysis.valueAssessment}</span>
+        </div>
+
+        <div class="pb-section pb-pros-cons">
+          <div class="pb-pros">
+            <h4>${currentLabels.pros}</h4>
+            <ul>
+              ${analysis.pros.map(pro => `<li>${pro}</li>`).join('')}
+            </ul>
+          </div>
+          <div class="pb-cons">
+            <h4>${currentLabels.cons}</h4>
+            <ul>
+              ${analysis.cons.map(con => `<li>${con}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+
+        ${analysis.keyInsights && analysis.keyInsights.length > 0 ? `
+          <div class="pb-section pb-insights">
+            <h4>${currentLabels.keyInsights}</h4>
+            <ul>
+              ${analysis.keyInsights.map(insight => `<li>${insight}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+
+        ${isAgentBased && analysis.agentWorkflow?.results?.finalRecommendation?.nextSteps ? `
+          <div class="pb-section pb-next-steps">
+            <h4>${currentLabels.nextSteps}</h4>
+            <ol>
+              ${analysis.agentWorkflow.results.finalRecommendation.nextSteps.map(step => 
+                `<li>${step}</li>`
+              ).join('')}
+            </ol>
+          </div>
+        ` : ''}
+
+        ${this.renderProductAvailability(analysis)}
+      </div>
+
+      ${this.renderMetadata(analysis)}
+    `;
+  }
+
+  static renderAgentThinking(workflow) {
+    if (!workflow || !workflow.steps) return '';
+
+    return `
+      <div class="pb-agent-thinking">
+        <button class="pb-thinking-toggle" onclick="this.parentElement.classList.toggle('expanded')">
+          🧠 Agent Thinking Process 
+          <span class="pb-toggle-icon">▼</span>
+        </button>
+        
+        <div class="pb-thinking-content">
+          <div class="pb-thinking-steps">
+            <h5>🔄 Execution Steps:</h5>
+            <div class="pb-steps-list">
+              ${workflow.steps.map((step, index) => `
+                <div class="pb-step">
+                  <span class="pb-step-number">${index + 1}</span>
+                  <span class="pb-step-name">${this.formatStepName(step)}</span>
+                  <span class="pb-step-status">✓</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          ${workflow.decisions && workflow.decisions.length > 0 ? `
+            <div class="pb-thinking-decisions">
+              <h5>🤔 Agent Decisions:</h5>
+              ${workflow.decisions.map(decision => `
+                <div class="pb-decision-card">
+                  <div class="pb-decision-header">
+                    <strong>${this.formatDecisionName(decision.decision)}</strong>
+                    <span class="pb-decision-result ${decision.result ? 'yes' : 'no'}">
+                      ${decision.result ? 'YES' : 'NO'}
+                    </span>
+                  </div>
+                  <div class="pb-decision-reasoning">
+                    ${Array.isArray(decision.reasoning) 
+                      ? `<ul>${decision.reasoning.map(r => `<li>${r}</li>`).join('')}</ul>`
+                      : `<p>${decision.reasoning}</p>`
+                    }
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          ${workflow.results?.searchTerms ? `
+            <div class="pb-thinking-search">
+              <h5>🔍 Generated Search Terms:</h5>
+              <div class="pb-search-terms">
+                ${workflow.results.searchTerms.map(term => 
+                  `<span class="pb-search-term">${term}</span>`
+                ).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  static formatStepName(step) {
+    return step
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  static formatDecisionName(decision) {
+    return decision
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ') + '?';
+  }
+
+  static renderProductAvailability(analysis) {
+    const labels = {
+      'en': {
+        availability: '🛒 Available On Other Sites',
+        price: 'Price',
+        rating: 'Rating',
+        reviews: 'reviews',
+        availability: 'Availability',
+        viewProduct: 'View Product',
+        notAvailable: 'Not Available',
+        checking: 'Checking availability...'
+      },
+      'fr': {
+        availability: '🛒 Disponible sur d\'Autres Sites',
+        price: 'Prix',
+        rating: 'Note',
+        reviews: 'avis',
+        availability: 'Disponibilité',
+        viewProduct: 'Voir le Produit',
+        notAvailable: 'Non Disponible',
+        checking: 'Vérification de la disponibilité...'
+      }
+    };
+
+    const currentLabels = labels[this.currentLanguage] || labels['en'];
+    
+    // Get availability results from agent workflow
+    const availabilityResults = analysis.agentWorkflow?.results?.productAvailability;
+    
+    if (!availabilityResults || availabilityResults.length === 0) {
+      return '';
+    }
+
+    const foundProducts = availabilityResults.filter(result => result.found);
+    const notFoundProducts = availabilityResults.filter(result => !result.found);
+
+    // If no products found on any site, show a helpful message
+    if (foundProducts.length === 0) {
+      return `
+        <div class="pb-section pb-product-availability">
+          <h4>${currentLabels.availability}</h4>
+          <div class="pb-no-products-found">
+            <p>🔍 Product availability check completed</p>
+            <p>This product was not found on other major e-commerce sites.</p>
+            <div class="pb-searched-sites">
+              <h5>Sites checked:</h5>
+              <div class="pb-sites-checked">
+                ${availabilityResults.map(result => `
+                  <div class="pb-site-checked">
+                    <span class="pb-site-icon">${result.icon}</span>
+                    <span class="pb-site-name">${result.website}</span>
+                    <span class="pb-check-status">Checked</span>
+                  </div>
+                `).join('')}
+              </div>
             </div>
           </div>
         </div>
-      ` : ''}
+      `;
+    }
 
-      ${analysis.keyInsights && analysis.keyInsights.length > 0 ? `
-        <div class="promptbridge-section">
-          <div class="promptbridge-section-title">Key Insights</div>
-          <ul class="promptbridge-list">
-            ${analysis.keyInsights.map(insight => `<li>${insight}</li>`).join('')}
-          </ul>
-        </div>
-      ` : ''}
-    `;
-  }
-
-  static generateLoadingSection() {
     return `
-      <div class="promptbridge-loading">
-        <div class="promptbridge-spinner"></div>
-        <div>Analyzing product with AI...</div>
-        <div style="font-size: 12px; color: rgba(255, 255, 255, 0.7); margin-top: 4px;">
-          This may take a few seconds
+      <div class="pb-section pb-product-availability">
+        <h4>${currentLabels.availability}</h4>
+        
+        <div class="pb-search-note">
+          <p>🔍 Showing search results for similar products on other sites</p>
         </div>
+        
+        <div class="pb-availability-grid">
+          ${foundProducts.map(result => `
+            <div class="pb-availability-card">
+              <div class="pb-availability-header">
+                <span class="pb-site-icon">${result.icon}</span>
+                <span class="pb-site-name">${result.website}</span>
+                <span class="pb-availability-badge available">Available</span>
+              </div>
+              
+              <div class="pb-availability-details">
+                <div class="pb-price-info">
+                  <span class="pb-price">$${result.product.price}</span>
+                  ${result.product.rating ? `
+                    <span class="pb-rating">
+                      ⭐ ${result.product.rating}/5
+                      ${result.product.reviewCount ? `(${result.product.reviewCount.toLocaleString()} ${currentLabels.reviews})` : ''}
+                    </span>
+                  ` : ''}
+                </div>
+                
+                ${result.product.availability ? `
+                  <div class="pb-availability-status">
+                    <span class="pb-status-label">${currentLabels.availability}:</span>
+                    <span class="pb-status-value">${result.product.availability}</span>
+                  </div>
+                ` : ''}
+                
+                ${result.product.condition ? `
+                  <div class="pb-condition">
+                    <span class="pb-condition-label">Condition:</span>
+                    <span class="pb-condition-value">${result.product.condition}</span>
+                  </div>
+                ` : ''}
+              </div>
+              
+              <div class="pb-availability-actions">
+                <a href="${result.product.url}" 
+                   target="_blank" 
+                   class="pb-view-product-btn"
+                   title="Search for this product on ${result.website}">
+                  ${result.product.searchType === 'search_results' ? 'Search on ' + result.website : currentLabels.viewProduct}
+                </a>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
       </div>
     `;
   }
 
-  static generateActionsSection() {
-    return `
-      <div class="promptbridge-actions">
-        <button class="promptbridge-action-btn" id="pb-refresh">🔄 Refresh</button>
-        <button class="promptbridge-action-btn" id="pb-compare">⚖️ Compare</button>
-        <button class="promptbridge-action-btn" id="pb-save">💾 Save</button>
-      </div>
-    `;
-  }
-
-  static generateDebugSection(productData, analysis) {
-    const extractionSuccess = productData.extractionLog 
-      ? productData.extractionLog.filter(log => log.success).length
-      : 0;
+  static renderMetadata(analysis) {
+    if (!analysis.metadata) return '';
     
-    const extractionTotal = productData.extractionLog 
-      ? productData.extractionLog.length
-      : 0;
-
     return `
-      <div class="promptbridge-debug-panel" id="pb-debug-panel" style="display: none;">
-        <div class="promptbridge-debug-title">Debug Information</div>
-        <div class="promptbridge-debug-item">Extraction: ${extractionSuccess}/${extractionTotal} successful</div>
-        <div class="promptbridge-debug-item">Site: ${productData.source?.site || 'Unknown'}</div>
-        <div class="promptbridge-debug-item">Product Type: ${productData.productType || 'Unknown'}</div>
-        <div class="promptbridge-debug-item">ASIN: ${productData.asin || 'N/A'}</div>
-        ${analysis ? `
-          <div class="promptbridge-debug-item">AI Processing: ${analysis.metadata?.processingTime || 'N/A'}ms</div>
-          <div class="promptbridge-debug-item">Analysis Quality: ${analysis.error ? 'Error' : 'Success'}</div>
-        ` : ''}
+      <div class="pb-metadata">
+        <small>
+          ⏱️ Processed in ${analysis.metadata.processingTime}ms
+          ${analysis.isAgentBased ? ' | 🤖 Agent Mode' : ' | 📊 Simple Mode'}
+        </small>
       </div>
     `;
+  }
+
+  static update(analysisData) {
+    try {
+      PromptBridgeHelpers.log('🔄 Updating widget with analysis...', {
+        hasAgentWorkflow: !!(analysisData.agentWorkflow),
+        agentSteps: analysisData.agentWorkflow?.steps?.length || 0
+      });
+
+      const widget = document.getElementById(this.widgetId);
+      if (!widget) {
+        PromptBridgeHelpers.error('❌ Widget not found for update');
+        return false;
+      }
+
+      const contentDiv = widget.querySelector('.pb-content');
+      if (!contentDiv) {
+        PromptBridgeHelpers.error('❌ Content div not found');
+        return false;
+      }
+
+      // Get product info from existing widget
+      const productInfoDiv = contentDiv.querySelector('.pb-product-info');
+      const productInfoHTML = productInfoDiv ? productInfoDiv.outerHTML : '';
+
+      // Update content with analysis
+      contentDiv.innerHTML = productInfoHTML + this.renderAnalysis(analysisData);
+
+      PromptBridgeHelpers.log('✅ Widget updated successfully', {
+        isAgentBased: analysisData.isAgentBased
+      });
+
+      return true;
+    } catch (error) {
+      PromptBridgeHelpers.error('❌ Widget update failed', error);
+      return false;
+    }
   }
 
   static setupEventListeners(widget) {
-    try {
-      PromptBridgeHelpers.log('🔗 Setting up widget event listeners...');
-
-      // Close button
-      const closeBtn = widget.querySelector('#pb-close');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-          PromptBridgeHelpers.log('👆 Close button clicked');
-          this.remove();
-        });
-      }
-
-      // Minimize button
-      const minimizeBtn = widget.querySelector('#pb-minimize');
-      if (minimizeBtn) {
-        minimizeBtn.addEventListener('click', () => {
-          PromptBridgeHelpers.log('👆 Minimize button clicked');
-          this.toggle();
-        });
-      }
-
-      // Debug toggle
-      const debugToggle = widget.querySelector('#pb-debug-toggle');
-      if (debugToggle) {
-        debugToggle.addEventListener('click', () => {
-          PromptBridgeHelpers.log('👆 Debug toggle clicked');
-          this.toggleDebugPanel();
-        });
-      }
-
-      // Action buttons
-      const refreshBtn = widget.querySelector('#pb-refresh');
-      if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => {
-          PromptBridgeHelpers.log('👆 Refresh button clicked');
-          this.handleRefresh();
-        });
-      }
-
-      const compareBtn = widget.querySelector('#pb-compare');
-      if (compareBtn) {
-        compareBtn.addEventListener('click', () => {
-          PromptBridgeHelpers.log('👆 Compare button clicked');
-          this.handleCompare();
-        });
-      }
-
-      const saveBtn = widget.querySelector('#pb-save');
-      if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
-          PromptBridgeHelpers.log('👆 Save button clicked');
-          this.handleSave();
-        });
-      }
-
-      PromptBridgeHelpers.log('✅ Event listeners setup completed');
-    } catch (error) {
-      PromptBridgeHelpers.error('❌ Event listener setup failed', error);
+    // Close button
+    const closeBtn = widget.querySelector('.pb-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.remove());
     }
+
+    // Language selector
+    const languageSelect = widget.querySelector('#pb-language-select');
+    if (languageSelect) {
+      languageSelect.addEventListener('change', async (e) => {
+        const newLanguage = e.target.value;
+        await this.handleLanguageChange(newLanguage);
+      });
+    }
+
+    // Make widget draggable (optional)
+    this.makeDraggable(widget);
   }
 
   static makeDraggable(widget) {
-    try {
-      const header = widget.querySelector('.promptbridge-header');
-      if (!header) return;
+    const header = widget.querySelector('.pb-header');
+    let isDragging = false;
+    let currentX;
+    let currentY;
+    let initialX;
+    let initialY;
 
-      let isDragging = false;
-      let currentX = 0;
-      let currentY = 0;
-      let initialX = 0;
-      let initialY = 0;
+    header.style.cursor = 'move';
 
-      header.addEventListener('mousedown', (e) => {
-        if (e.target.tagName === 'BUTTON') return; // Don't drag when clicking buttons
-        
-        isDragging = true;
-        header.style.cursor = 'grabbing';
-        
-        const rect = widget.getBoundingClientRect();
-        initialX = e.clientX - rect.left;
-        initialY = e.clientY - rect.top;
-        
-        PromptBridgeHelpers.log('🖱️ Drag started');
-      });
-
-      document.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-
-        e.preventDefault();
-        currentX = e.clientX - initialX;
-        currentY = e.clientY - initialY;
-
-        // Keep widget within viewport
-        const maxX = window.innerWidth - widget.offsetWidth;
-        const maxY = window.innerHeight - widget.offsetHeight;
-        
-        currentX = Math.max(0, Math.min(currentX, maxX));
-        currentY = Math.max(0, Math.min(currentY, maxY));
-
-        widget.style.left = currentX + 'px';
-        widget.style.top = currentY + 'px';
-        widget.style.right = 'auto';
-      });
-
-      document.addEventListener('mouseup', () => {
-        if (isDragging) {
-          isDragging = false;
-          header.style.cursor = 'move';
-          PromptBridgeHelpers.log('🖱️ Drag ended', { x: currentX, y: currentY });
-        }
-      });
-
-      header.style.cursor = 'move';
-    } catch (error) {
-      PromptBridgeHelpers.error('❌ Make draggable failed', error);
-    }
-  }
-
-  static update(analysis) {
-    try {
-      if (!this.instance) return;
-
-      PromptBridgeHelpers.log('🔄 Updating widget with analysis results...');
-
-      const content = this.instance.querySelector('#pb-content');
-      if (!content) return;
-
-      // Find and replace the loading section
-      const loadingSection = content.querySelector('.promptbridge-loading');
-      if (loadingSection && analysis) {
-        const analysisHTML = this.generateAnalysisSection(analysis);
-        loadingSection.outerHTML = analysisHTML;
-        
-        PromptBridgeHelpers.log('✅ Widget updated successfully', {
-          hasRecommendation: !!analysis.recommendation,
-          prosCount: analysis.pros?.length || 0,
-          consCount: analysis.cons?.length || 0
-        });
-      }
-    } catch (error) {
-      PromptBridgeHelpers.error('❌ Widget update failed', error);
-    }
-  }
-
-  static toggle() {
-    if (!this.instance) return;
-
-    try {
-      const content = this.instance.querySelector('.promptbridge-content');
-      const minimizeBtn = this.instance.querySelector('#pb-minimize');
-
-      if (this.instance.classList.contains('minimized')) {
-        this.instance.classList.remove('minimized');
-        content.style.display = 'block';
-        minimizeBtn.textContent = '−';
-        PromptBridgeHelpers.log('📖 Widget expanded');
-      } else {
-        this.instance.classList.add('minimized');
-        content.style.display = 'none';
-        minimizeBtn.textContent = '+';
-        PromptBridgeHelpers.log('📕 Widget minimized');
-      }
-    } catch (error) {
-      PromptBridgeHelpers.error('❌ Widget toggle failed', error);
-    }
-  }
-
-  static toggleDebugPanel() {
-    if (!this.instance) return;
-
-    try {
-      const debugPanel = this.instance.querySelector('#pb-debug-panel');
-      if (debugPanel) {
-        const isVisible = debugPanel.style.display !== 'none';
-        debugPanel.style.display = isVisible ? 'none' : 'block';
-        PromptBridgeHelpers.log(`🐛 Debug panel ${isVisible ? 'hidden' : 'shown'}`);
-      }
-    } catch (error) {
-      PromptBridgeHelpers.error('❌ Debug panel toggle failed', error);
-    }
-  }
-
-  static handleRefresh() {
-    try {
-      PromptBridgeHelpers.log('🔄 Handling refresh action...');
+    header.addEventListener('mousedown', (e) => {
+      if (e.target.classList.contains('pb-close')) return;
       
-      // Trigger a re-analysis
-      if (window.PromptBridgeMain && window.PromptBridgeMain.currentProductData) {
-        window.PromptBridgeMain.analyzeCurrentProduct();
-      } else {
-        PromptBridgeHelpers.error('❌ No product data available for refresh');
-      }
-    } catch (error) {
-      PromptBridgeHelpers.error('❌ Refresh action failed', error);
-    }
-  }
+      isDragging = true;
+      initialX = e.clientX - widget.offsetLeft;
+      initialY = e.clientY - widget.offsetTop;
+    });
 
-  static handleCompare() {
-    try {
-      PromptBridgeHelpers.log('⚖️ Handling compare action...');
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
       
-      // Placeholder for future comparison functionality
-      alert('Product comparison feature coming soon! This will search for similar products and provide side-by-side analysis.');
-    } catch (error) {
-      PromptBridgeHelpers.error('❌ Compare action failed', error);
-    }
-  }
+      e.preventDefault();
+      currentX = e.clientX - initialX;
+      currentY = e.clientY - initialY;
+      
+      widget.style.left = currentX + 'px';
+      widget.style.top = currentY + 'px';
+      widget.style.right = 'auto';
+      widget.style.bottom = 'auto';
+    });
 
-  static async handleSave() {
-    try {
-      PromptBridgeHelpers.log('💾 Handling save action...');
-      
-      if (window.PromptBridgeMain && window.PromptBridgeMain.currentProductData) {
-        const saved = await PromptBridgeHelpers.saveToStorage(
-          `product_${Date.now()}`, 
-          window.PromptBridgeMain.currentProductData
-        );
-        
-        if (saved) {
-          PromptBridgeHelpers.log('✅ Product saved successfully');
-          // Show temporary feedback
-          const saveBtn = this.instance.querySelector('#pb-save');
-          if (saveBtn) {
-            const originalText = saveBtn.textContent;
-            saveBtn.textContent = '✓ Saved';
-            setTimeout(() => {
-              saveBtn.textContent = originalText;
-            }, 2000);
-          }
-        }
-      }
-    } catch (error) {
-      PromptBridgeHelpers.error('❌ Save action failed', error);
-    }
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
   }
 
   static remove() {
-    try {
-      if (this.instance) {
-        PromptBridgeHelpers.log('🗑️ Removing widget...');
-        this.instance.remove();
-        this.instance = null;
-        this.isVisible = false;
-        PromptBridgeHelpers.log('✅ Widget removed successfully');
-      }
-    } catch (error) {
-      PromptBridgeHelpers.error('❌ Widget removal failed', error);
+    const widget = document.getElementById(this.widgetId);
+    if (widget) {
+      widget.remove();
+      this.currentWidget = null;
+      PromptBridgeHelpers.log('🗑️ Widget removed');
     }
   }
 
   static isPresent() {
-    return this.instance !== null && this.isVisible;
+    return !!document.getElementById(this.widgetId);
+  }
+
+  static getPosition() {
+    const widget = document.getElementById(this.widgetId);
+    if (!widget) return null;
+    
+    const rect = widget.getBoundingClientRect();
+    return {
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height
+    };
+  }
+
+  static async handleLanguageChange(newLanguage) {
+    try {
+      PromptBridgeHelpers.log('🌐 Language change requested:', {
+        from: this.currentLanguage,
+        to: newLanguage
+      });
+
+      if (newLanguage === this.currentLanguage) {
+        return; // No change needed
+      }
+
+      // Disable language selector during translation
+      const languageSelect = document.getElementById('pb-language-select');
+      if (languageSelect) {
+        languageSelect.disabled = true;
+      }
+
+      // Show loading state
+      this.showTranslationLoading();
+
+      // Get current analysis data from PromptBridgeMain
+      const currentAnalysis = PromptBridgeMain.currentAnalysis;
+      const currentProductData = PromptBridgeMain.currentProductData;
+
+      if (!currentAnalysis) {
+        throw new Error('No analysis data available for translation');
+      }
+
+      // Translate existing analysis data for any language change
+      await this.translateAnalysisData(currentAnalysis, newLanguage);
+
+    } catch (error) {
+      PromptBridgeHelpers.error('❌ Language change failed', error);
+      this.showTranslationError(error.message);
+    } finally {
+      // Re-enable language selector
+      const languageSelect = document.getElementById('pb-language-select');
+      if (languageSelect) {
+        languageSelect.disabled = false;
+      }
+    }
+  }
+
+  static async translateAnalysisData(analysisData, targetLanguage) {
+    try {
+      PromptBridgeHelpers.log('🔄 Translating analysis data...', { targetLanguage });
+
+      // Initialize translator if needed
+      if (!PromptBridgeTranslator.isInitialized) {
+        await PromptBridgeTranslator.initialize();
+      }
+
+      // Translate the analysis data
+      const translatedAnalysis = await PromptBridgeTranslator.translateAnalysisData(analysisData, targetLanguage);
+
+      // Update current language
+      this.currentLanguage = targetLanguage;
+      PromptBridgeTranslator.setCurrentLanguage(targetLanguage);
+
+      // Update the widget with translated content
+      this.update(translatedAnalysis);
+
+      PromptBridgeHelpers.log('✅ Analysis translation completed', { targetLanguage });
+
+    } catch (error) {
+      PromptBridgeHelpers.error('❌ Analysis translation failed', error);
+      throw error;
+    }
+  }
+
+
+  static showTranslationLoading() {
+    const contentDiv = document.querySelector('.pb-content');
+    if (contentDiv) {
+      const productInfoDiv = contentDiv.querySelector('.pb-product-info');
+      const productInfoHTML = productInfoDiv ? productInfoDiv.outerHTML : '';
+
+      const loadingMessages = {
+        'en': '🔄 Translating content...',
+        'fr': '🔄 Traduction du contenu...'
+      };
+
+      contentDiv.innerHTML = productInfoHTML + `
+        <div class="pb-loading">
+          <div class="pb-spinner"></div>
+          <p>${loadingMessages[this.currentLanguage] || loadingMessages['en']}</p>
+        </div>
+      `;
+    }
+  }
+
+
+  static showTranslationError(errorMessage) {
+    const contentDiv = document.querySelector('.pb-content');
+    if (contentDiv) {
+      const productInfoDiv = contentDiv.querySelector('.pb-product-info');
+      const productInfoHTML = productInfoDiv ? productInfoDiv.outerHTML : '';
+
+      contentDiv.innerHTML = productInfoHTML + `
+        <div class="pb-error">
+          <h4>⚠️ Translation Error</h4>
+          <p>${errorMessage}</p>
+          <button onclick="location.reload()" class="pb-retry-btn">Retry</button>
+        </div>
+      `;
+    }
+  }
+
+  static setAnalyzingState(isAnalyzing) {
+    this.isAnalyzing = isAnalyzing;
+    const languageSelect = document.getElementById('pb-language-select');
+    if (languageSelect) {
+      languageSelect.disabled = isAnalyzing;
+    }
+  }
+
+  static getCurrentLanguage() {
+    return this.currentLanguage;
+  }
+
+  static setCurrentLanguage(language) {
+    this.currentLanguage = language;
+    PromptBridgeTranslator.setCurrentLanguage(language);
+  }
+
+  static truncate(text, length) {
+    if (!text) return '';
+    return text.length > length ? text.substring(0, length) + '...' : text;
   }
 }
 
-// Make widget available globally
 window.PromptBridgeWidget = PromptBridgeWidget;

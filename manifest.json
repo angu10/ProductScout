@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "Agent-Powered PromptBridge",
+  "name": "ProductScout",
   "version": "1.0.0",
   "description": "AI-powered e-commerce product analysis using Chrome Built-in AI APIs",
   "permissions": [
     "tabs",
-    "activeTab",
+    "activeTab", 
     "storage",
-    "aiLanguageModelOriginTrial"
+    "scripting",
+    "contextMenus"
   ],
   "host_permissions": [
     "https://www.amazon.com/*",
@@ -31,6 +32,9 @@
         "agents/detector.js",
         "agents/extractor.js",
         "ai/prompt-processor.js",
+        "ai/agent-orchestrator.js",
+        "ai/product-availability-checker.js",
+        "ai/translator-service.js",
         "ui/widget.js",
         "content.js"
       ],
@@ -41,7 +45,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "PromptBridge"
+    "default_title": "ProductScout"
   },
   "icons": {
     "16": "assets/icons/icon16.png",
@@ -53,5 +57,9 @@
       "resources": ["ui/widget.html"],
       "matches": ["<all_urls>"]
     }
+  ],
+  "trial_tokens": [
+    "ArbO+WySLMK3SgCASOUJLck9WOao/i2qVsmKQhzzZGSbNfBVaak0UPpmMrnKX36nntcUZisNealTomuMZE+j8QkAAAB7eyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vZ2tmZGpqcGpoY3BkYmxrYm1pbmRqcGZjaWhrcGNsbmgiLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElNdWx0aW1vZGFsSW5wdXQiLCJleHBpcnkiOjE3NzQzMTA0MDB9"
+    
   ]
 }

@@ -368,7 +368,7 @@ class PopupController {
 
   static showError(message) {
     console.error('[PromptBridge Popup] ❌ Error:', message);
-    alert(`PromptBridge Error: ${message}`);
+    alert(`ProductScout Error: ${message}`);
   }
 }
 

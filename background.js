@@ -181,31 +181,9 @@ class PromptBridgeBackground {
       const response = await chrome.tabs.sendMessage(tabId, { action: 'ping' });
       console.log('[PromptBridge Background] ✅ Content script already active:', response);
     } catch (error) {
-      // Content script not present, inject it
-      console.log('[PromptBridge Background] 📦 Injecting content script...');
-      
-      try {
-        await chrome.scripting.executeScript({
-          target: { tabId },
-          files: [
-            'utils/helpers.js',
-            'agents/detector.js', 
-            'agents/extractor.js',
-            'ai/prompt-processor.js',
-            'ui/widget.js',
-            'content.js'
-          ]
-        });
-
-        await chrome.scripting.insertCSS({
-          target: { tabId },
-          files: ['ui/styles.css']
-        });
-
-        console.log('[PromptBridge Background] ✅ Content script injected successfully');
-      } catch (injectError) {
-        console.error('[PromptBridge Background] ❌ Content script injection failed:', injectError);
-      }
+      // Content scripts are automatically injected via manifest.json
+      // This is just for logging - no manual injection needed
+      console.log('[PromptBridge Background] 📦 Content script will be injected automatically by manifest');
     }
   }
 

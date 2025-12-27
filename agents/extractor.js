@@ -1,4 +1,4 @@
-// Enhanced product data extraction with detailed logging
+// Enhanced product data extraction with robust review count handling
 class ProductExtractor {
   static async extractProductData(detectionResult) {
     const { site, config, productType, url } = detectionResult;
@@ -34,7 +34,7 @@ class ProductExtractor {
     await this.extractTitle(productData, config);
     await this.extractPricing(productData, config);
     await this.extractImages(productData, config);
-    await this.extractRating(productData, config);
+    await this.extractRating(productData, config, site);
     await this.extractAvailability(productData, config);
     await this.extractDescription(productData, config);
     
@@ -48,7 +48,8 @@ class ProductExtractor {
         productData[key] !== null && key !== 'extractionLog'
       ),
       totalLogEntries: productData.extractionLog.length,
-      productData: productData
+      reviewCount: productData.reviewCount,
+      rating: productData.rating
     });
 
     return productData;
@@ -203,7 +204,7 @@ class ProductExtractor {
         });
       }
 
-      productData.images = Array.from(foundImages).slice(0, 5); // Limit to 5 images
+      productData.images = Array.from(foundImages).slice(0, 5);
       
       productData.extractionLog.push({
         field: 'images',
@@ -229,18 +230,19 @@ class ProductExtractor {
     }
   }
 
-  static async extractRating(productData, config) {
+  static async extractRating(productData, config, site) {
     try {
-      PromptBridgeHelpers.log('⭐ Extracting product rating...');
+      PromptBridgeHelpers.log('⭐ Extracting product rating and reviews...');
       
+      // Extract rating first
       const ratingSelectors = config.selectors.rating.split(', ');
       let ratingElement = null;
-      let usedSelector = null;
+      let usedRatingSelector = null;
 
       for (const selector of ratingSelectors) {
         ratingElement = document.querySelector(selector.trim());
         if (ratingElement) {
-          usedSelector = selector.trim();
+          usedRatingSelector = selector.trim();
           break;
         }
       }
@@ -255,49 +257,30 @@ class ProductExtractor {
           productData.rating = parseFloat(ratingMatch[1]);
         }
 
-        // Extract review count
-        const reviewSelectors = config.selectors.reviews?.split(', ') || [];
-        for (const selector of reviewSelectors) {
-          const reviewElement = document.querySelector(selector.trim());
-          if (reviewElement) {
-            const reviewText = reviewElement.textContent;
-            const reviewMatch = reviewText.match(/([0-9,]+)\s*reviews?/i) ||
-                               reviewText.match(/\(([0-9,]+)\)/);
-            if (reviewMatch) {
-              productData.reviewCount = parseInt(reviewMatch[1].replace(/,/g, ''));
-              break;
-            }
-          }
-        }
-
-        productData.extractionLog.push({
-          field: 'rating',
-          success: productData.rating !== null,
-          selector: usedSelector,
-          rawText: ratingText,
+        PromptBridgeHelpers.log('✅ Rating extracted', {
           rating: productData.rating,
-          reviewCount: productData.reviewCount,
-          timestamp: Date.now()
-        });
-
-        PromptBridgeHelpers.log('✅ Rating extracted successfully', {
-          rating: productData.rating,
-          reviewCount: productData.reviewCount,
           rawText: ratingText,
-          selector: usedSelector
-        });
-      } else {
-        productData.extractionLog.push({
-          field: 'rating',
-          success: false,
-          selectors: ratingSelectors,
-          error: 'Element not found',
-          timestamp: Date.now()
-        });
-        PromptBridgeHelpers.log('⚠️ Rating extraction - element not found', {
-          triedSelectors: ratingSelectors
+          selector: usedRatingSelector
         });
       }
+
+      // IMPROVED: Extract review count with site-specific strategies
+      productData.reviewCount = await this.extractReviewCount(site, config);
+
+      productData.extractionLog.push({
+        field: 'rating',
+        success: productData.rating !== null || productData.reviewCount !== null,
+        selector: usedRatingSelector,
+        rating: productData.rating,
+        reviewCount: productData.reviewCount,
+        timestamp: Date.now()
+      });
+
+      PromptBridgeHelpers.log('✅ Rating and reviews extraction completed', {
+        rating: productData.rating,
+        reviewCount: productData.reviewCount
+      });
+
     } catch (error) {
       productData.extractionLog.push({
         field: 'rating',
@@ -306,6 +289,141 @@ class ProductExtractor {
         timestamp: Date.now()
       });
       PromptBridgeHelpers.error('❌ Rating extraction failed with error', error);
+    }
+  }
+
+  static async extractReviewCount(site, config) {
+    try {
+      PromptBridgeHelpers.log('📊 Extracting review count with multi-strategy approach...');
+      
+      let reviewCount = null;
+      const strategies = [];
+
+      // Strategy 1: Use config selectors if available
+      if (config.selectors.reviews) {
+        strategies.push({
+          name: 'config_selectors',
+          selectors: config.selectors.reviews.split(', ')
+        });
+      }
+
+      // Strategy 2: Amazon-specific selectors (most common)
+      if (site === 'amazon.com') {
+        strategies.push({
+          name: 'amazon_primary',
+          selectors: [
+            '#acrCustomerReviewText',           // Primary: "69,032 ratings"
+            '[data-hook="total-review-count"]', // Alternative
+            '#averageCustomerReviews_feature_div [data-hook="total-review-count"]'
+          ]
+        });
+        
+        strategies.push({
+          name: 'amazon_secondary',
+          selectors: [
+            '.a-size-base.a-link-normal',      // Sometimes in link
+            '#reviewsMedley .a-size-base',     // Reviews section
+            '.review-count'
+          ]
+        });
+      }
+
+      // Strategy 3: Generic review selectors
+      strategies.push({
+        name: 'generic',
+        selectors: [
+          '[class*="review-count"]',
+          '[class*="reviewCount"]',
+          '[data-test*="review"]',
+          '[aria-label*="review"]'
+        ]
+      });
+
+      // Try each strategy until we find reviews
+      for (const strategy of strategies) {
+        PromptBridgeHelpers.log(`🔍 Trying strategy: ${strategy.name}`, {
+          selectors: strategy.selectors
+        });
+
+        for (const selector of strategy.selectors) {
+          const element = document.querySelector(selector.trim());
+          
+          if (element) {
+            const text = element.textContent || element.innerText;
+            PromptBridgeHelpers.log(`📄 Found element with text: "${text}"`, {
+              selector: selector.trim()
+            });
+
+            // Multiple regex patterns to catch different formats
+            const patterns = [
+              /([0-9,]+)\s*ratings?/i,           // "69,032 ratings"
+              /([0-9,]+)\s*reviews?/i,           // "69,032 reviews"
+              /([0-9,]+)\s*customer reviews?/i,  // "69,032 customer reviews"
+              /\(([0-9,]+)\s*ratings?\)/i,       // "(69,032 ratings)"
+              /\(([0-9,]+)\)/,                   // "(69,032)"
+              /([0-9,]+)\s*total/i,              // "69,032 total"
+            ];
+
+            for (const pattern of patterns) {
+              const match = text.match(pattern);
+              if (match) {
+                reviewCount = parseInt(match[1].replace(/,/g, ''), 10);
+                
+                if (reviewCount && reviewCount > 0) {
+                  PromptBridgeHelpers.log('✅ Review count extracted successfully!', {
+                    count: reviewCount,
+                    strategy: strategy.name,
+                    selector: selector.trim(),
+                    rawText: text,
+                    pattern: pattern.toString()
+                  });
+                  return reviewCount;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Final fallback: search all text nodes for review count
+      if (!reviewCount) {
+        PromptBridgeHelpers.log('🔍 Attempting fallback: scanning all text nodes...');
+        
+        const walker = document.createTreeWalker(
+          document.body,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+
+        let node;
+        while (node = walker.nextNode()) {
+          const text = node.textContent;
+          const match = text.match(/([0-9,]+)\s*(?:ratings?|reviews?)/i);
+          
+          if (match) {
+            const count = parseInt(match[1].replace(/,/g, ''), 10);
+            if (count > 10) { // Sanity check: at least 10 reviews
+              reviewCount = count;
+              PromptBridgeHelpers.log('✅ Review count found via text scan!', {
+                count: reviewCount,
+                text: text.substring(0, 100)
+              });
+              break;
+            }
+          }
+        }
+      }
+
+      if (!reviewCount) {
+        PromptBridgeHelpers.log('⚠️ Review count not found after all strategies');
+      }
+
+      return reviewCount;
+
+    } catch (error) {
+      PromptBridgeHelpers.error('❌ Review count extraction failed', error);
+      return null;
     }
   }
 
@@ -380,7 +498,6 @@ class ProductExtractor {
       }
 
       if (descriptionElement) {
-        // Extract bullet points or description text
         const bulletPoints = descriptionElement.querySelectorAll('li');
         if (bulletPoints.length > 0) {
           productData.description = Array.from(bulletPoints)
@@ -537,12 +654,12 @@ class ProductExtractor {
       isValid: validation.isValid,
       score: `${validation.score}/${validation.maxScore}`,
       completeness: `${validation.completeness.toFixed(1)}%`,
-      issues: validation.issues
+      issues: validation.issues,
+      reviewCount: productData.reviewCount
     });
 
     return validation;
   }
 }
 
-// Make extractor available globally
 window.ProductExtractor = ProductExtractor;
